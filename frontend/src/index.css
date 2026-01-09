@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 120 10% 8%;
+    --foreground: 120 5% 95%;
+    --card: 120 8% 12%;
+    --card-foreground: 120 5% 95%;
+    --popover: 120 8% 12%;
+    --popover-foreground: 120 5% 95%;
+    --primary: 140 80% 50%;
+    --primary-foreground: 120 10% 8%;
+    --primary-glow: 140 80% 60%;
+    --secondary: 120 8% 15%;
+    --secondary-foreground: 120 5% 85%;
+    --muted: 120 8% 15%;
+    --muted-foreground: 120 5% 65%;
+    --accent: 160 70% 45%;
+    --accent-foreground: 120 10% 8%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 120 8% 20%;
+    --input: 120 8% 20%;
+    --ring: 140 80% 50%;
+    --radius: 0.5rem;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-hero: linear-gradient(135deg, hsl(140 80% 50%), hsl(160 70% 45%));
+    --gradient-card: linear-gradient(145deg, hsl(120 8% 12%), hsl(120 8% 15%));
+    --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / .2);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / .3);
+    --transition-smooth: all .3s cubic-bezier(.4, 0, .2, 1);
+  }
+
+  .dark {
+    --background: 120 15% 5%;
+    --foreground: 120 5% 95%;
+    --card: 120 12% 8%;
+    --card-foreground: 120 5% 95%;
+    --popover: 120 12% 8%;
+    --popover-foreground: 120 5% 95%;
+    --primary: 140 85% 55%;
+    --primary-foreground: 120 15% 5%;
+    --primary-glow: 140 85% 65%;
+    --secondary: 120 12% 12%;
+    --secondary-foreground: 120 5% 90%;
+    --muted: 120 12% 12%;
+    --muted-foreground: 120 5% 70%;
+    --accent: 160 75% 50%;
+    --accent-foreground: 120 15% 5%;
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 120 5% 95%;
+    --border: 120 12% 18%;
+    --input: 120 12% 18%;
+    --ring: 140 85% 55%;
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-hero: linear-gradient(135deg, hsl(140 85% 55%), hsl(160 75% 50%));
+    --gradient-card: linear-gradient(145deg, hsl(120 12% 8%), hsl(120 12% 12%));
+    --shadow-elegant: 0 10px 30px -10px hsl(var(--primary) / .3);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / .4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .neural-network-bg {
+    background-image: url(https://skyagent-artifacts.skywork.ai/page/hatzfn28w7/images/neural_network_bg_20251206_035015.png);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    position: relative;
+  }
+
+  .neural-network-bg:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, hsl(var(--background) / .85), hsl(var(--background) / .75), hsl(var(--background) / .85));
+    z-index: 1;
+  }
+
+  .neural-network-bg > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse-glow {
+    0% {
+      box-shadow: var(--shadow-elegant);
+    }
+    100% {
+      box-shadow: var(--shadow-glow);
+    }
+  }
+}
