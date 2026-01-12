@@ -4,11 +4,9 @@
  */
 
 // Determine API base URL based on environment
-// Use relative URLs in production (proxied by Vercel serverless function)
+// Use hardcoded URL for both development and production
 const isProduction = import.meta.env.PROD;
-const API_BASE_URL = isProduction 
-  ? '/api' // Use relative URL in production (proxied by Vercel)
-  : 'http://44.223.69.157:3001/api'; // Use full URL in development
+const API_BASE_URL = 'http://44.223.69.157:3001/api'; // Use direct URL for both environments
 
 // Log backend URL configuration
 console.log('🔗 Backend URL Configuration:');
