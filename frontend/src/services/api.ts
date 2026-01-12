@@ -4,9 +4,14 @@
  */
 
 // Determine API base URL based on environment
-// Use hardcoded URL for both development and production
 const isProduction = import.meta.env.PROD;
-const API_BASE_URL = 'http://44.223.69.157:3001/api'; // Use direct URL for both environments
+
+const normalizeUrl = (url: string) => (url ? url.replace(/\/+$/, '') : '');
+const envBaseUrl = normalizeUrl(import.meta.env.VITE_API_BASE_URL || '');
+const originBase = typeof window !== 'undefined' ? normalizeUrl(window.location.origin) : '';
+const resolvedBase = envBaseUrl || (originBase ? `${originBase}/api` : '/api');
+const API_BASE_URL = resolvedBase.endsWith('/api') ? resolvedBase : `${resolvedBase}/api`;
+const HEALTH_URL = `${API_BASE_URL.replace(/\/api$/, '')}/health`;
 
 // Log backend URL configuration
 console.log('🔗 Backend URL Configuration:');
@@ -143,7 +148,7 @@ export async function generateContent(request: GenerateRequest): Promise<Generat
  */
 export async function checkServerHealth(): Promise<boolean> {
   try {
-    const response = await fetch('/health');
+    const response = await fetch(HEALTH_URL);
     return response.ok;
   } catch (error) {
     return false;
