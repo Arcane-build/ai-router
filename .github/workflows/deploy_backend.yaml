@@ -49,6 +49,12 @@ jobs:
             echo "Warning: .env.example not found, creating empty .env.deploy"
             touch .env.deploy
           fi
+          # Replace or add FAL_KEY from GitHub secrets
+          if grep -q "^FAL_KEY=" .env.deploy; then
+            sed -i "s/^FAL_KEY=.*/FAL_KEY=${{ secrets.FAL_KEY }}/g" .env.deploy
+          else
+            echo "FAL_KEY=${{ secrets.FAL_KEY }}" >> .env.deploy
+          fi
           # Replace DYNAMIC_ENV_ID with the value from secrets if it exists
           if grep -q "DYNAMIC_ENV_ID" .env.deploy; then
             sed -i "s/DYNAMIC_ENV_ID=.*/DYNAMIC_ENV_ID=${{ secrets.DYNAMIC_ENV_ID }}/g" .env.deploy
