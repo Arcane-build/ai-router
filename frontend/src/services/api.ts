@@ -3,17 +3,12 @@
  * Handles all communication with the backend API
  */
 
-// Determine API base URL based on environment
-// Use relative URLs in production (proxied by Vercel serverless function)
-const isProduction = import.meta.env.PROD;
-const API_BASE_URL = isProduction 
-  ? '/api' // Use relative URL in production (proxied by Vercel)
-  : 'http://44.223.69.157:3001/api'; // Use full URL in development
+// Use relative URLs - Vercel rewrites will proxy to backend
+const API_BASE_URL = '/api';
 
 // Log backend URL configuration
 console.log('🔗 Backend URL Configuration:');
 console.log('  Environment:', import.meta.env.MODE);
-console.log('  Is Production:', isProduction);
 console.log('  API_BASE_URL:', API_BASE_URL);
 
 // Types for API responses
@@ -145,8 +140,7 @@ export async function generateContent(request: GenerateRequest): Promise<Generat
  */
 export async function checkServerHealth(): Promise<boolean> {
   try {
-    const healthUrl = isProduction ? '/health' : 'http://44.223.69.157:3001/health';
-    const response = await fetch(healthUrl);
+    const response = await fetch('/health');
     return response.ok;
   } catch (error) {
     return false;
