@@ -1,0 +1,160 @@
+name: Deploy Hyperdex Backend to EC2 (Asia Region)
+
+on:
+  push:
+    branches: ["main"]  # or the branch you want to trigger deployment on
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Build Hyperdex Backend Docker image
+      - name: Build Hyperdex Backend Docker image
+        run: |
+          docker build \
+            -t hyperdex-backend:latest \
+            -f backend/Dockerfile \
+            backend/
+
+      # Step 3: Save Docker image as tar
+      - name: Save Docker image
+        run: |
+          docker save hyperdex-backend:latest | gzip > hyperdex-backend.tar.gz
+
+      # Step 4: Copy image to EC2
+      - name: Copy image to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST_ASIA }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY_ASIA }}
+          source: "hyperdex-backend.tar.gz"
+          target: "~/"
+
+      # Step 4.5: Create dynamic .env file and copy to EC2
+      - name: Create dynamic .env file
+        run: |
+          # Create .env file from .env.example with dynamic values
+          # Check if .env.example exists in backend directory first, then root
+          if [ -f backend/.env.example ]; then
+            cp backend/.env.example .env.deploy
+          elif [ -f .env.example ]; then
+            cp .env.example .env.deploy
+          else
+            echo "Warning: .env.example not found, creating empty .env.deploy"
+            touch .env.deploy
+          fi
+          # Replace DYNAMIC_ENV_ID with the value from secrets if it exists
+          if grep -q "DYNAMIC_ENV_ID" .env.deploy; then
+            sed -i "s/DYNAMIC_ENV_ID=.*/DYNAMIC_ENV_ID=${{ secrets.DYNAMIC_ENV_ID }}/g" .env.deploy
+          fi
+
+      - name: Copy configuration files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST_ASIA }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY_ASIA }}
+          source: ".env.deploy,docker-compose.prod.yml"
+          target: "~/"
+
+      # Step 5: SSH into EC2 and deploy container
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST_ASIA }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY_ASIA }}
+          script: |
+            # Remove existing hyperdex directory
+            rm -rf ~/hyperdex
+            # Ensure target directory exists
+            mkdir -p ~/hyperdex
+
+            # Copy configuration files from home directory to hyperdex directory
+            if [ -f ~/.env.deploy ]; then
+              cp ~/.env.deploy ~/hyperdex/.env
+              echo "Created .env file from .env.deploy with dynamic DYNAMIC_ENV_ID"
+            else
+              echo "Error: .env.deploy not found! Cannot create .env file."
+              exit 1
+            fi
+
+            # Copy docker-compose file if it exists
+            if [ -f ~/docker-compose.prod.yml ]; then
+              cp ~/docker-compose.prod.yml ~/hyperdex/docker-compose.prod.yml
+            fi
+
+            # Load new image
+            sudo docker load < ~/hyperdex-backend.tar.gz
+            
+            # Stop and remove old container
+            sudo docker stop hyperdex-backend || true
+            sudo docker rm hyperdex-backend || true
+            
+            # Run new container with health check using host network
+            # Configured to use maximum available CPU and memory resources
+            # Dynamically detect and use all available system resources
+            TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
+            TOTAL_MEM_MB=$((TOTAL_MEM - 512))  # Reserve 512MB for system
+            CPU_COUNT=$(nproc)
+            
+            sudo docker run -d --name hyperdex-backend \
+              --network host \
+              --env-file ~/hyperdex/.env \
+              --restart unless-stopped \
+              --cpus="${CPU_COUNT}" \
+              --memory="${TOTAL_MEM_MB}m" \
+              --memory-swap="${TOTAL_MEM_MB}m" \
+              hyperdex-backend:latest
+            
+            # Wait for container to start and be healthy
+            echo "Waiting for container to be healthy..."
+            sleep 15
+            
+            # Check health endpoint
+            for i in {1..10}; do
+              if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+                echo "Health check passed!"
+                break
+              fi
+              echo "Health check attempt $i failed, retrying in 5 seconds..."
+              sleep 5
+            done
+            
+            # Verify container is running
+            if sudo docker ps | grep -q hyperdex-backend; then
+              echo "Deployment successful! Container is running."
+              
+              # Show container status
+              sudo docker ps | grep hyperdex-backend
+              
+              # Show health status
+              curl -s http://localhost:3001/health | jq '.' || echo "Health endpoint response received"
+              
+              echo "Cleaning up old images and containers..."
+              
+              # Prune stopped containers
+              sudo docker container prune -f
+              
+              # Prune dangling images
+              sudo docker image prune -f
+              
+              # Prune unused images older than 24 hours
+              sudo docker image prune -a -f --filter "until=24h"
+              
+              # Clean up tar file
+              rm -f ~/hyperdex-backend.tar.gz
+              
+              echo "Cleanup completed successfully!"
+            else
+              echo "Deployment failed! Container is not running."
+              echo "Container logs:"
+              sudo docker logs hyperdex-backend || true
+              exit 1
+            fi
