@@ -1,6 +1,6 @@
 const BACKEND_URL = 'http://44.223.69.157:3001';
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req, res) {
   console.log('API Proxy called:', req.method, req.url, req.query);
   
   // Handle CORS preflight
@@ -12,7 +12,6 @@ export default async function handler(req: any, res: any) {
   }
 
   // Get the path from the request
-  // For [...path], Vercel passes it as an array in req.query.path
   let path = '';
   if (req.query.path) {
     if (Array.isArray(req.query.path)) {
@@ -27,7 +26,7 @@ export default async function handler(req: any, res: any) {
   Object.entries(req.query || {}).forEach(([key, value]) => {
     if (key !== 'path' && value !== undefined && value !== null) {
       if (Array.isArray(value)) {
-        value.forEach((v: any) => queryParams.append(key, String(v)));
+        value.forEach((v) => queryParams.append(key, String(v)));
       } else {
         queryParams.append(key, String(value));
       }
@@ -41,7 +40,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     // Prepare headers
-    const headers: Record<string, string> = {
+    const headers = {
       'Content-Type': 'application/json',
     };
     
@@ -50,7 +49,7 @@ export default async function handler(req: any, res: any) {
     }
 
     // Forward the request to the backend
-    const fetchOptions: RequestInit = {
+    const fetchOptions = {
       method: req.method,
       headers,
     };
@@ -79,7 +78,7 @@ export default async function handler(req: any, res: any) {
     
     const data = await response.json();
     return res.status(response.status).json(data);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Proxy error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(500).json({ 
