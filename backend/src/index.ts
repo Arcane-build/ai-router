@@ -9,27 +9,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // CORS configuration
-// Allow requests from Vercel deployments and local development
+// Allow all origins
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    console.log('CORS request from origin:', origin);
-    
-    // Allow requests with no origin (like mobile apps, Postman, or curl)
-    if (!origin) return callback(null, true);
-    
-    // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-    
-    // Allow all Vercel deployments
-    if (origin.includes('.vercel.app')) {
-      return callback(null, true);
-    }
-    
-    // Allow all origins for now (you can restrict this later)
-    callback(null, true);
-  },
+  origin: '*', // Allow all origins
   credentials: false, // Set to false for cross-origin requests
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
