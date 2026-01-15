@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { MODEL_CONFIG, getAllCategories, getModelsForCategory, getModel } from '../config/models';
 import { generateContent } from '../services/falAI';
+import { authenticateUser } from '../middleware/auth';
+import { checkCredits, getCreditCost } from '../middleware/credits';
+import { deductCredits, getUserById } from '../services/userService';
 
 const router = Router();
 
@@ -11,18 +14,20 @@ const router = Router();
 router.get('/tools', (req: Request, res: Response) => {
   try {
     const categories = getAllCategories();
-    const tools = categories.map(category => ({
-      category,
-      models: getModelsForCategory(category).map(model => ({
-        name: model.name,
-        logo: model.logo,
-        pros: model.pros,
-        cons: model.cons,
-        pricePerToken: model.pricePerToken,
-        price: `$${model.pricePerToken.toFixed(4)}`, // Format for display
-        description: model.pros[0] || "AI model for content generation"
-      }))
-    }));
+    const tools = categories.map(category => {
+      const creditCost = getCreditCost(category);
+      return {
+        category,
+        models: getModelsForCategory(category).map(model => ({
+          name: model.name,
+          logo: model.logo,
+          pros: model.pros,
+          cons: model.cons,
+          credits: creditCost,
+          description: model.pros[0] || "AI model for content generation"
+        }))
+      };
+    });
 
     res.json({
       success: true,
@@ -53,6 +58,8 @@ router.get('/tools/:category', (req: Request, res: Response) => {
       });
     }
 
+    const creditCost = getCreditCost(category);
+
     res.json({
       success: true,
       data: {
@@ -62,8 +69,7 @@ router.get('/tools/:category', (req: Request, res: Response) => {
           logo: model.logo,
           pros: model.pros,
           cons: model.cons,
-          pricePerToken: model.pricePerToken,
-          price: `$${model.pricePerToken.toFixed(4)}`,
+          credits: creditCost,
           description: model.pros[0] || "AI model for content generation"
         }))
       }
@@ -81,8 +87,9 @@ router.get('/tools/:category', (req: Request, res: Response) => {
  * POST /api/generate
  * Generate content using selected model
  * Body: { category: string, model: string, prompt: string, additionalParams?: object }
+ * Requires: Authentication and sufficient credits
  */
-router.post('/generate', async (req: Request, res: Response) => {
+router.post('/generate', authenticateUser, checkCredits, async (req: Request, res: Response) => {
   try {
     const { category, model, prompt, additionalParams } = req.body;
 
@@ -103,6 +110,10 @@ router.post('/generate', async (req: Request, res: Response) => {
       });
     }
 
+    // Get credit cost (set by checkCredits middleware)
+    const creditCost = (req as any).creditCost;
+    const userId = req.user!.id;
+
     // Generate content
     const result = await generateContent(modelConfig, prompt, additionalParams);
 
@@ -113,20 +124,74 @@ router.post('/generate', async (req: Request, res: Response) => {
       });
     }
 
-    // Return result
+    // Deduct credits after successful generation
+    const creditDeduction = deductCredits(userId, creditCost);
+    if (!creditDeduction.success) {
+      // This shouldn't happen since we checked credits before, but handle it anyway
+      console.error('Failed to deduct credits after generation:', creditDeduction);
+    }
+
+    // Return result with updated credits
     res.json({
       success: true,
       data: result.data,
       cost: result.cost,
       requestId: result.requestId,
       model: modelConfig.name,
-      category: category
+      category: category,
+      creditsUsed: creditCost,
+      remainingCredits: creditDeduction.user?.credits || 0
     });
   } catch (error: any) {
     console.error("Error generating content:", error);
     res.status(500).json({
       success: false,
       error: error.message || "Failed to generate content"
+    });
+  }
+});
+
+/**
+ * GET /api/user/profile
+ * Get current user profile with credits
+ * Requires: Authentication middleware
+ */
+router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
+  try {
+    // User is already attached by authenticateUser middleware
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not authenticated',
+      });
+    }
+
+    // Get full user data
+    const user = getUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          email: user.email,
+          credits: user.credits,
+          createdAt: user.createdAt,
+          lastLogin: user.lastLogin,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Get user profile error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to get user profile',
     });
   }
 });

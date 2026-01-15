@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": "b3991828-2719-4945-a25b-05009c8fb6e3",
+      "email": "tejas@gmail.com",
+      "credits": 4940,
+      "createdAt": "2026-01-15T18:14:12.016Z",
+      "lastLogin": "2026-01-15T18:23:25.494Z"
+    },
+    {
+      "id": "f3db1d08-3816-40f2-8fad-7c2f88c2bd49",
+      "email": "hello@gmail.com",
+      "credits": 5000,
+      "createdAt": "2026-01-15T18:23:17.558Z",
+      "lastLogin": "2026-01-15T18:23:17.558Z"
+    }
+  ]
+}

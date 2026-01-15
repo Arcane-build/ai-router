@@ -6,6 +6,29 @@
 // Use relative URLs - Vercel rewrites will proxy to backend
 const API_BASE_URL = '/api';
 
+/**
+ * Get authentication token from localStorage
+ */
+function getAuthToken(): string | null {
+  return localStorage.getItem('auth_token');
+}
+
+/**
+ * Get headers with authentication token
+ */
+function getAuthHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
 // Log backend URL configuration
 console.log('🔗 Backend URL Configuration:');
 console.log('  Environment:', import.meta.env.MODE);
@@ -22,8 +45,7 @@ export interface ModelInfo {
   logo: string;
   pros: string[];
   cons: string[];
-  pricePerToken: number;
-  price: string;
+  credits: number;
   description: string;
 }
 
@@ -42,6 +64,8 @@ export interface GenerateResponse {
   model?: string;
   category?: string;
   error?: string;
+  creditsUsed?: number;
+  remainingCredits?: number;
 }
 
 export interface ApiResponse<T> {
@@ -110,13 +134,24 @@ export async function generateContent(request: GenerateRequest): Promise<Generat
   try {
     const response = await fetch(`${API_BASE_URL}/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(request),
     });
     
     if (!response.ok) {
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        // Remove invalid token
+        localStorage.removeItem('auth_token');
+        throw new Error('Authentication expired. Please login again.');
+      }
+      
+      // Handle 402 Payment Required - insufficient credits
+      if (response.status === 402) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Insufficient credits');
+      }
+      
       // Try to parse error response
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);

@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './routes/api';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API Routes
 app.use('/api', apiRoutes);
+app.use('/api/auth', authRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: Function) => {

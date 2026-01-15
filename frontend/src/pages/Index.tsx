@@ -2,12 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, Zap, Shield, Globe, Coins, Users, TrendingUp, Brain, DollarSign, Settings, BarChart3, Menu, Loader2 } from "lucide-react";
+import { ArrowRight, Zap, Shield, Globe, Coins, Users, TrendingUp, Brain, DollarSign, Settings, BarChart3, Menu, Loader2, User } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchTools, fetchToolsByCategory, generateContent, type ModelInfo, type GenerateResponse } from "@/services/api";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [userQuery, setUserQuery] = useState("");
@@ -142,6 +146,11 @@ const Index = () => {
       setGenerationResponse(response);
       setGenerationCost(response.cost || null);
       setGenerationProgress("");
+
+      // Refresh user credits after successful generation
+      if (response.remainingCredits !== undefined) {
+        refreshUser();
+      }
 
       // Format result based on content type
       const resultText = formatGenerationResult(response, model, selectedTool);
@@ -504,16 +513,56 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               <div className="font-bold text-xl gradient-text">AI Tooling Protocol</div>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Home</a>
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Integrations</a>
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Discover</a>
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">Profile</a>
+            <div className="flex items-center space-x-4">
+              {/* User Info - Desktop */}
+              {user && (
+                <div className="hidden md:flex items-center space-x-4">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+                    <Coins className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-primary">
+                      {user.credits.toLocaleString()} credits
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/profile')}
+                    className="flex items-center gap-2"
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="hidden lg:inline">{user.email}</span>
+                    <span className="lg:hidden">Profile</span>
+                  </Button>
+                </div>
+              )}
+              
+              {/* Mobile Menu */}
+              <Button variant="outline" size="sm" className="md:hidden">
+                <Menu className="h-4 w-4" />
+              </Button>
             </div>
-            <Button variant="outline" size="sm" className="md:hidden">
-              <Menu className="h-4 w-4" />
-            </Button>
           </div>
+          
+          {/* User Info - Mobile */}
+          {user && (
+            <div className="md:hidden flex items-center justify-between py-2 border-t border-border/40">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-lg border border-primary/20">
+                <Coins className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">
+                  {user.credits.toLocaleString()} credits
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/profile')}
+                className="flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                Profile
+              </Button>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -691,8 +740,8 @@ const Index = () => {
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="text-2xl font-bold text-primary">{model.price}</div>
-                                  <div className="text-xs text-muted-foreground">per task</div>
+                                  <div className="text-2xl font-bold text-primary">{model.credits}</div>
+                                  <div className="text-xs text-muted-foreground">credits</div>
                                 </div>
                               </div>
                               {isGenerating && selectedModel?.name === model.name && (
