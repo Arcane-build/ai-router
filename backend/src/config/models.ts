@@ -65,6 +65,114 @@ export const MODEL_CONFIG: Record<string, ToolCategory> = {
         modelType: 'fal-ai'
       },
       {
+        name: "Flux Pro Ultra",
+        falModelId: "fal-ai/flux-pro/v1.1-ultra",
+        logo: "✨",
+        pros: ["Ultra high quality images", "Excellent detail and realism"],
+        cons: ["Slower generation", "Higher resource usage"],
+        pricePerToken: 0.00025,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Flux 2",
+        falModelId: "fal-ai/flux-2",
+        logo: "🌊",
+        pros: ["Fast generation", "Good quality", "Balanced performance"],
+        cons: ["Standard quality compared to Pro"],
+        pricePerToken: 0.00020,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Flux 2 Pro",
+        falModelId: "fal-ai/flux-2-pro",
+        logo: "🌟",
+        pros: ["Professional quality", "High detail", "Excellent realism"],
+        cons: ["Slower than standard Flux 2"],
+        pricePerToken: 0.00022,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Imagen 4",
+        falModelId: "fal-ai/imagen4/preview/fast",
+        logo: "🖼️",
+        pros: ["Fast generation", "Google quality", "Good for narratives"],
+        cons: ["Preview version"],
+        pricePerToken: 0.00020,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "GPT Image 1.5",
+        falModelId: "fal-ai/gpt-image-1.5",
+        logo: "🤖",
+        pros: ["Realistic photos", "High quality", "Good coordinates support"],
+        cons: ["Limited customization"],
+        pricePerToken: 0.00021,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Seedream 4.5",
+        falModelId: "fal-ai/bytedance/seedream/v4.5/text-to-image",
+        logo: "🌱",
+        pros: ["Good text rendering", "Creative outputs", "Auto sizing"],
+        cons: ["Limited control options"],
+        pricePerToken: 0.00019,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Ovis Image",
+        falModelId: "fal-ai/ovis-image",
+        logo: "🐑",
+        pros: ["Creative and artistic", "Good for abstract concepts"],
+        cons: ["May be slower"],
+        pricePerToken: 0.00020,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "ImagineArt 1.5",
+        falModelId: "imagineart/imagineart-1.5-preview/text-to-image",
+        logo: "🎭",
+        pros: ["Artistic style", "Good for portraits", "Fast generation"],
+        cons: ["Preview version", "Limited aspect ratios"],
+        pricePerToken: 0.00018,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Gemini 3 Pro Image",
+        falModelId: "fal-ai/gemini-3-pro-image-preview",
+        logo: "💎",
+        pros: ["Google quality", "High resolution", "Good detail"],
+        cons: ["Preview version"],
+        pricePerToken: 0.00022,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Emu 3.5 Image",
+        falModelId: "fal-ai/emu-3.5-image/text-to-image",
+        logo: "🦘",
+        pros: ["High quality", "Good detail", "Meta technology"],
+        cons: ["May be slower"],
+        pricePerToken: 0.00021,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Piflow",
+        falModelId: "fal-ai/piflow",
+        logo: "π",
+        pros: ["Very fast generation", "Good quality", "Efficient"],
+        cons: ["Fewer inference steps"],
+        pricePerToken: 0.00017,
+        modelType: 'fal-ai'
+      },
+      {
+        name: "Flux Krea",
+        falModelId: "fal-ai/flux/krea",
+        logo: "🎨",
+        pros: ["Artistic style", "Good for street photography", "Natural look"],
+        cons: ["Slower with no acceleration"],
+        pricePerToken: 0.00020,
+        modelType: 'fal-ai'
+      },
+      {
         name: "Ideogram",
         falModelId: "fal-ai/ideogram/v3",
         logo: "🖼️",

@@ -325,6 +325,124 @@ function buildInputForModel(
         resolution: additionalParams?.resolution || "1K",
       };
 
+    case "fal-ai/flux-pro/v1.1-ultra": // Flux Pro Ultra
+      return {
+        ...baseInput,
+        num_images: additionalParams?.num_images || 1,
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+        output_format: additionalParams?.output_format || "jpeg",
+        safety_tolerance: additionalParams?.safety_tolerance || "2",
+        image_prompt_strength: additionalParams?.image_prompt_strength || 0.1,
+        aspect_ratio: additionalParams?.aspect_ratio || "16:9",
+      };
+
+    case "fal-ai/flux-2": // Flux 2
+      return {
+        ...baseInput,
+        guidance_scale: additionalParams?.guidance_scale || 2.5,
+        num_inference_steps: additionalParams?.num_inference_steps || 28,
+        image_size: additionalParams?.image_size || "landscape_4_3",
+        num_images: additionalParams?.num_images || 1,
+        acceleration: additionalParams?.acceleration || "regular",
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+        output_format: additionalParams?.output_format || "png",
+      };
+
+    case "fal-ai/flux-2-pro": // Flux 2 Pro
+      return {
+        ...baseInput,
+        image_size: additionalParams?.image_size || "landscape_4_3",
+        safety_tolerance: additionalParams?.safety_tolerance || "2",
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+        output_format: additionalParams?.output_format || "jpeg",
+      };
+
+    case "fal-ai/imagen4/preview/fast": // Imagen 4
+      return {
+        ...baseInput,
+        num_images: additionalParams?.num_images || 1,
+        aspect_ratio: additionalParams?.aspect_ratio || "1:1",
+        output_format: additionalParams?.output_format || "png",
+      };
+
+    case "fal-ai/gpt-image-1.5": // GPT Image 1.5
+      return {
+        ...baseInput,
+        image_size: additionalParams?.image_size || "1024x1024",
+        background: additionalParams?.background || "auto",
+        quality: additionalParams?.quality || "high",
+        num_images: additionalParams?.num_images || 1,
+        output_format: additionalParams?.output_format || "png",
+      };
+
+    case "fal-ai/bytedance/seedream/v4.5/text-to-image": // Seedream 4.5
+      return {
+        ...baseInput,
+        image_size: additionalParams?.image_size || "auto_2K",
+        num_images: additionalParams?.num_images || 1,
+        max_images: additionalParams?.max_images || 1,
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+      };
+
+    case "fal-ai/ovis-image": // Ovis Image
+      return {
+        ...baseInput,
+        image_size: additionalParams?.image_size || "landscape_4_3",
+        num_inference_steps: additionalParams?.num_inference_steps || 28,
+        guidance_scale: additionalParams?.guidance_scale || 5,
+        num_images: additionalParams?.num_images || 1,
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+        output_format: additionalParams?.output_format || "png",
+        acceleration: additionalParams?.acceleration || "regular",
+      };
+
+    case "imagineart/imagineart-1.5-preview/text-to-image": // ImagineArt 1.5
+      return {
+        ...baseInput,
+        aspect_ratio: additionalParams?.aspect_ratio || "1:1",
+        seed: additionalParams?.seed !== undefined ? additionalParams.seed : 0,
+      };
+
+    case "fal-ai/gemini-3-pro-image-preview": // Gemini 3 Pro Image
+      return {
+        ...baseInput,
+        num_images: additionalParams?.num_images || 1,
+        aspect_ratio: additionalParams?.aspect_ratio || "1:1",
+        output_format: additionalParams?.output_format || "png",
+        resolution: additionalParams?.resolution || "1K",
+      };
+
+    case "fal-ai/emu-3.5-image/text-to-image": // Emu 3.5 Image
+      return {
+        ...baseInput,
+        resolution: additionalParams?.resolution || "720p",
+        aspect_ratio: additionalParams?.aspect_ratio || "1:1",
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+        output_format: additionalParams?.output_format || "png",
+      };
+
+    case "fal-ai/piflow": // Piflow
+      return {
+        ...baseInput,
+        image_size: additionalParams?.image_size || "square_hd",
+        num_inference_steps: additionalParams?.num_inference_steps || 8,
+        num_images: additionalParams?.num_images || 1,
+        output_format: additionalParams?.output_format || "jpeg",
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+      };
+
+    case "fal-ai/flux/krea": // Flux Krea
+      return {
+        ...baseInput,
+        image_size: additionalParams?.image_size || "landscape_4_3",
+        num_inference_steps: additionalParams?.num_inference_steps || 28,
+        guidance_scale: additionalParams?.guidance_scale || 4.5,
+        num_images: additionalParams?.num_images || 1,
+        enable_safety_checker: additionalParams?.enable_safety_checker !== false,
+        output_format: additionalParams?.output_format || "jpeg",
+        acceleration: additionalParams?.acceleration || "none",
+      };
+
     case "fal-ai/pika/v2.2/text-to-video": // Pika
       return {
         ...baseInput,
