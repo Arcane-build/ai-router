@@ -10,7 +10,7 @@ import { Loader2, Mail, ArrowRight } from 'lucide-react';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, register } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
