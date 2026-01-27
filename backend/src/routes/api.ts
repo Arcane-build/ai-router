@@ -4,6 +4,7 @@ import { generateContent } from '../services/falAI';
 import { authenticateUser } from '../middleware/auth';
 import { checkCredits, getCreditCost } from '../middleware/credits';
 import { deductCredits, getUserById } from '../services/userService';
+import { sendWaitlistConfirmation } from '../services/emailService';
 
 const router = Router();
 
@@ -192,6 +193,51 @@ router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get user profile',
+    });
+  }
+});
+
+/**
+ * POST /api/waitlist
+ * Join the waitlist and receive confirmation email
+ * Body: { email: string, name?: string }
+ */
+router.post('/waitlist', async (req: Request, res: Response) => {
+  try {
+    const { email, name } = req.body;
+
+    // Validate email
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid email is required',
+      });
+    }
+
+    // Send confirmation email
+    const emailResult = await sendWaitlistConfirmation({ email, name });
+
+    if (!emailResult.success) {
+      console.error('Failed to send waitlist confirmation:', emailResult.error);
+      // Still return success to user, but log the error
+      // You might want to save to database here even if email fails
+      return res.status(200).json({
+        success: true,
+        message: 'You have been added to the waitlist!',
+        emailSent: false,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'You have been added to the waitlist! Check your email for confirmation.',
+      emailSent: true,
+    });
+  } catch (error: any) {
+    console.error('Waitlist signup error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to join waitlist',
     });
   }
 });

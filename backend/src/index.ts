@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './routes/api';
 import authRoutes from './routes/auth';
+import { verifyEmailConfig } from './services/emailService';
 
 dotenv.config();
 
@@ -51,7 +52,20 @@ app.use((req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
+  
+  // Verify email configuration
+  console.log('\n📧 Checking email configuration...');
+  const emailConfigured = await verifyEmailConfig();
+  if (!emailConfigured) {
+    console.warn('\n⚠️  WARNING: Email is NOT configured!');
+    console.warn('⚠️  Waitlist emails will FAIL until you:');
+    console.warn('⚠️  1. Create a .env file in the backend folder');
+    console.warn('⚠️  2. Add SMTP credentials (see .env.example)');
+    console.warn('⚠️  3. Restart the server\n');
+  } else {
+    console.log('✅ Email is configured and ready\n');
+  }
 });
