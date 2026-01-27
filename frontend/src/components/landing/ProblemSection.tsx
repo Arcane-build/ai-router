@@ -37,7 +37,7 @@ export const ProblemSection = () => {
               <p className="font-roboto-mono text-xs md:text-sm text-gray-400 tracking-wider uppercase">
                 The <span className="text-white">Agent Economy</span> is coming.
               </p>
-              <h1 className="font-tobias text-5xl md:text-5xl lg:text-6xl leading-[0.9] text-white font-normal md:font-light">
+              <h1 className="font-tobias text-5xl md:text-5xl lg:text-6xl leading-tight md:leading-[0.9] lg:leading-[0.9] text-white font-normal md:font-light">
                 Models were yesterday.<br />
                 Tasks are today.
               </h1>
@@ -64,7 +64,7 @@ export const ProblemSection = () => {
                       i === activeStep ? "bg-white border-white" : "bg-transparent border border-white/40"
                     }`} 
                   />
-                  <span className="text-white font-roboto-mono text-lg md:text-xl font-normal md:font-light tracking-wide transition-all duration-500">
+                  <span className="text-white font-roboto-mono text-base md:text-lg font-normal md:font-light tracking-wide transition-all duration-500">
                     {item}
                   </span>
                 </div>

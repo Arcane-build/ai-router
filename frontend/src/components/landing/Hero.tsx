@@ -11,7 +11,7 @@ export const Hero = () => {
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[760px] h-[760px] pointer-events-none z-0 opacity-60 mix-blend-screen"
       />
 
-      <div className="container mx-auto px-6 md:px-12 relative z-10 flex-grow flex flex-col justify-between pt-20 pb-12 md:pt-32 md:pb-24">
+      <div className="container mx-auto px-6 md:px-12 relative z-10 flex-grow flex flex-col justify-between pt-28 pb-12 md:pt-32 md:pb-24">
         
         {/* Top Left Content */}
         <div className="flex flex-col items-start gap-6 md:gap-8 max-w-4xl">
