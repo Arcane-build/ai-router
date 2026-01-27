@@ -81,6 +81,10 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "float": "float 3s ease-in-out infinite",
       },
+      fontFamily: {
+        'roboto-mono': ['"Roboto Mono"', 'monospace'],
+        'tobias': ['Tobias', 'serif'],
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
