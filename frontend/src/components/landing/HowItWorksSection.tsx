@@ -16,7 +16,7 @@ export const HowItWorksSection = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % steps.length);
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 

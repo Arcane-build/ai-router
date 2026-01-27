@@ -1,7 +1,11 @@
 
 import { Shield } from "lucide-react";
+import { useState } from "react";
+import { WaitlistModal } from "./WaitlistModal";
 
 export const Hero = () => {
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+
   return (
     <section className="min-h-screen relative bg-black overflow-hidden flex flex-col text-white font-sans">
       {/* Background GIF */}
@@ -51,9 +55,9 @@ export const Hero = () => {
             <div className="flex flex-row items-center gap-3 md:gap-4 mt-2 w-full md:w-auto">
               <button 
                 className="flex-1 md:flex-none bg-white text-black font-roboto-mono text-[10px] sm:text-xs font-bold tracking-widest px-4 sm:px-8 py-4 rounded-full hover:bg-white/90 transition-colors uppercase whitespace-nowrap"
-                onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => setIsWaitlistOpen(true)}
               >
-                Get Started
+                Join Waitlist
               </button>
               <button 
                 className="flex-1 md:flex-none bg-white/10 text-white border border-white/10 font-roboto-mono text-[10px] sm:text-xs font-bold tracking-widest px-4 sm:px-8 py-4 rounded-full hover:bg-white/20 transition-colors uppercase whitespace-nowrap"
@@ -64,6 +68,8 @@ export const Hero = () => {
           </div>
         </div>
       </div>
+
+      <WaitlistModal isOpen={isWaitlistOpen} onClose={() => setIsWaitlistOpen(false)} />
     </section>
   );
 };
