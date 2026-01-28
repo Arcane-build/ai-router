@@ -59,11 +59,14 @@ export const Hero = () => {
               >
                 Join Waitlist
               </button>
-              <button 
-                className="flex-1 md:flex-none bg-white/10 text-white border border-white/10 font-roboto-mono text-[10px] sm:text-xs font-bold tracking-widest px-4 sm:px-8 py-4 rounded-full hover:bg-white/20 transition-colors uppercase whitespace-nowrap"
+              <a 
+                href="/Novi.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 md:flex-none bg-white/10 text-white border border-white/10 font-roboto-mono text-[10px] sm:text-xs font-bold tracking-widest px-4 sm:px-8 py-4 rounded-full hover:bg-white/20 transition-colors uppercase whitespace-nowrap inline-flex items-center justify-center"
               >
                 Read Whitepaper
-              </button>
+              </a>
             </div>
           </div>
         </div>
