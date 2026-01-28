@@ -1,19 +1,12 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Email transporter configuration
-// You'll need to configure these environment variables in your .env file
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com', // e.g., smtp.gmail.com, smtp.sendgrid.net
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER, // Your email or SMTP username
-    pass: process.env.SMTP_PASSWORD, // Your email password or SMTP password
-  },
-});
+// Production-ready email service using Resend
+// Free tier: 3,000 emails/month, 100 emails/day
+// Paid: $20/month for 50,000 emails
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface WaitlistEmailData {
   email: string;
@@ -23,13 +16,18 @@ interface WaitlistEmailData {
 /**
  * Send waitlist confirmation email
  */
-export async function sendWaitlistConfirmation(data: WaitlistEmailData): Promise<{ success: boolean; error?: string }> {
+export async function sendWaitlistConfirmation(data: WaitlistEmailData): Promise<{ 
+  success: boolean; 
+  error?: string;
+  messageId?: string;
+}> {
   try {
     const { email, name } = data;
     
-    const mailOptions = {
-      from: `"Novi AI" <${process.env.SMTP_USER || 'support@noviai.xyz'}>`, // Sender address
-      to: email, // Recipient
+    const { data: emailData, error: sendError } = await resend.emails.send({
+      from: process.env.FROM_EMAIL || 'Novi AI <onboarding@resend.dev>',
+      to: [email],
+      replyTo: process.env.REPLY_TO_EMAIL || 'support@noviai.xyz',
       subject: 'Welcome to Novi AI Waitlist! 🚀',
       html: `
         <!DOCTYPE html>
@@ -155,14 +153,31 @@ The Novi AI Team
 This email was sent to ${email} because you joined our waitlist.
 © ${new Date().getFullYear()} Novi AI. All rights reserved.
       `.trim(),
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Waitlist confirmation email sent to ${email}`);
+    if (sendError) {
+      console.error('❌ Email send failed:', {
+        email: data.email,
+        error: sendError.message,
+        code: sendError.name
+      });
+      return { 
+        success: false, 
+        error: sendError.message || 'Failed to send confirmation email' 
+      };
+    }
+
+    console.log(`✅ Email sent to ${data.email} | MessageID: ${emailData?.id}`);
     
-    return { success: true };
+    return { 
+      success: true, 
+      messageId: emailData?.id
+    };
   } catch (error: any) {
-    console.error('Error sending waitlist email:', error);
+    console.error('❌ Email send failed:', {
+      email: data.email,
+      error: error.message
+    });
     return { 
       success: false, 
       error: error.message || 'Failed to send confirmation email' 
@@ -171,15 +186,18 @@ This email was sent to ${email} because you joined our waitlist.
 }
 
 /**
- * Verify email transporter configuration
+ * Verify email configuration
  */
 export async function verifyEmailConfig(): Promise<boolean> {
   try {
-    await transporter.verify();
-    console.log('✅ Email transporter is ready');
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 'your-resend-api-key-here') {
+      console.error('❌ RESEND_API_KEY not configured');
+      return false;
+    }
+    console.log('✅ Resend API key configured');
     return true;
   } catch (error: any) {
-    console.error('❌ Email transporter error:', error.message);
+    console.error('❌ Email config error:', error.message);
     return false;
   }
 }

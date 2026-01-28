@@ -60,12 +60,14 @@ app.listen(PORT, async () => {
   console.log('\n📧 Checking email configuration...');
   const emailConfigured = await verifyEmailConfig();
   if (!emailConfigured) {
-    console.warn('\n⚠️  WARNING: Email is NOT configured!');
-    console.warn('⚠️  Waitlist emails will FAIL until you:');
-    console.warn('⚠️  1. Create a .env file in the backend folder');
-    console.warn('⚠️  2. Add SMTP credentials (see .env.example)');
-    console.warn('⚠️  3. Restart the server\n');
+    console.warn('\n⚠️  WARNING: Email NOT configured!');
+    console.warn('⚠️  Setup takes 2 minutes:');
+    console.warn('⚠️  1. Sign up at https://resend.com (FREE: 3,000/month)');
+    console.warn('⚠️  2. Get API key from dashboard');
+    console.warn('⚠️  3. Add to backend/.env: RESEND_API_KEY=re_...');
+    console.warn('⚠️  4. Restart server\n');
   } else {
-    console.log('✅ Email is configured and ready\n');
+    console.log('✅ Email service ready (Resend)');
+    console.log('📬 Free tier: 3,000 emails/month\n');
   }
 });

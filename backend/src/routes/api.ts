@@ -5,6 +5,7 @@ import { authenticateUser } from '../middleware/auth';
 import { checkCredits, getCreditCost } from '../middleware/credits';
 import { deductCredits, getUserById } from '../services/userService';
 import { sendWaitlistConfirmation } from '../services/emailService';
+import { addToWaitlist, markEmailSent } from '../services/waitlistService';
 
 const router = Router();
 
@@ -206,38 +207,67 @@ router.post('/waitlist', async (req: Request, res: Response) => {
   try {
     const { email, name } = req.body;
 
-    // Validate email
-    if (!email || !email.includes('@')) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        error: 'Valid email is required',
+        error: 'Please provide a valid email address',
+      });
+    }
+
+    // Get IP address for tracking
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+
+    // Add to waitlist database
+    const waitlistResult = addToWaitlist(email, name, ipAddress);
+
+    if (!waitlistResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to add to waitlist. Please try again.',
+      });
+    }
+
+    // If already on waitlist, return early
+    if (!waitlistResult.isNew) {
+      return res.status(200).json({
+        success: true,
+        message: 'You are already on the waitlist!',
+        emailSent: true,
       });
     }
 
     // Send confirmation email
     const emailResult = await sendWaitlistConfirmation({ email, name });
 
-    if (!emailResult.success) {
-      console.error('Failed to send waitlist confirmation:', emailResult.error);
-      // Still return success to user, but log the error
-      // You might want to save to database here even if email fails
+    // Mark email as sent/failed in database
+    if (emailResult.success) {
+      markEmailSent(email, true);
+      console.log(`✅ Waitlist complete: ${email} | Email sent successfully`);
+      
+      return res.json({
+        success: true,
+        message: 'Welcome to the waitlist! Check your email for confirmation.',
+        emailSent: true,
+      });
+    } else {
+      markEmailSent(email, false);
+      console.error(`⚠️ Waitlist saved but email failed: ${email}`);
+      
+      // Still return success since they're on the waitlist
       return res.status(200).json({
         success: true,
         message: 'You have been added to the waitlist!',
         emailSent: false,
+        warning: 'Email confirmation could not be sent. We have your email saved.'
       });
     }
-
-    res.json({
-      success: true,
-      message: 'You have been added to the waitlist! Check your email for confirmation.',
-      emailSent: true,
-    });
   } catch (error: any) {
-    console.error('Waitlist signup error:', error);
-    res.status(500).json({
+    console.error('❌ Waitlist error:', error);
+    return res.status(500).json({
       success: false,
-      error: error.message || 'Failed to join waitlist',
+      error: 'An unexpected error occurred. Please try again later.',
     });
   }
 });
