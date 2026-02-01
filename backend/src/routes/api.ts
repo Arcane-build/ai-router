@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { MODEL_CONFIG, getAllCategories, getModelsForCategory, getModel } from '../config/models';
 import { generateContent } from '../services/falAI';
+import { processWithGemini } from '../services/geminiService';
 import { authenticateUser } from '../middleware/auth';
 import { checkCredits, getCreditCost } from '../middleware/credits';
 import { deductCredits, getUserById } from '../services/userService';
 import { sendWaitlistConfirmation } from '../services/emailService';
 import { addToWaitlist, markEmailSent } from '../services/waitlistService';
+import { fal } from '@fal-ai/client';
 
 const router = Router();
 
@@ -194,6 +196,38 @@ router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to get user profile',
+    });
+  }
+});
+
+/**
+ * POST /api/process
+ * Process prompt and images with Gemini or fal.ai
+ * Body: { prompt: string, images?: string[] }
+ * Public endpoint for demo
+ */
+router.post('/process', async (req: Request, res: Response) => {
+  console.log('📥 Received process request:', { prompt: req.body.prompt?.substring(0, 50), hasImages: !!req.body.images });
+  try {
+    const { prompt, images } = req.body;
+    
+    const apiKey = process.env.GEMINI_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'GEMINI_KEY not configured in environment',
+      });
+    }
+
+    console.log(`📝 Processing with Gemini SDK (gemini-2.5-flash)`);
+    const result = await processWithGemini(prompt || '', images || [], apiKey);
+    
+    return res.json(result);
+  } catch (error: any) {
+    console.error('Process endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to process request',
     });
   }
 });
