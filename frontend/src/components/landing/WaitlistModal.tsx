@@ -4,6 +4,9 @@ import { X, Send, Loader2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
+// Use the same API base URL configuration as other API calls
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 interface WaitlistModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,7 +39,7 @@ export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
     setLoading(true);
     
     try {
-      const response = await fetch('http://localhost:3001/api/waitlist', {
+      const response = await fetch(`${API_BASE_URL}/waitlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
