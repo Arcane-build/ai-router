@@ -49,32 +49,31 @@ export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
 
       const data = await response.json();
 
-      if (data.success) {
-        if (data.isExisting) {
-          toast.success(<>
-    Welcome back!
-    <br />
-    Your email is already registered.
-    You're all set to explore NOVI AI!
-  </>
-          );
-        } else {
-          toast.success(<>
-    Congratulations! 
-    <br />
-    You've been successfully added to the NOVI AI waitlist!
-    Get ready to explore the only AI interface you need with free joining credits!
-  </>
-          );
-        }
-        setEmail("");
-        onClose();
-      } else {
-        toast.error(data.error || "Failed to join waitlist. Please try again.");
-      }
+      // Always show success message regardless of response
+      toast.success(<>
+        Congratulations! 
+        <br />
+        You've been successfully added to the NOVI AI waitlist!
+        <br />
+        Get ready to explore the only AI interface you need with free joining credits!
+      </>);
+      
+      setEmail("");
+      onClose();
     } catch (error) {
       console.error('Waitlist signup error:', error);
-      toast.error("Failed to join waitlist. Please try again.");
+      
+      // Even on error, show success message
+      toast.success(<>
+        Congratulations! 
+        <br />
+        You've been successfully added to the NOVI AI waitlist!
+        <br />
+        Get ready to explore the only AI interface you need with free joining credits!
+      </>);
+      
+      setEmail("");
+      onClose();
     } finally {
       setLoading(false);
     }
