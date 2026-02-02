@@ -3,8 +3,8 @@
  * Handles all communication with the backend API
  */
 
-// Use relative URLs - Vercel rewrites will proxy to backend
-const API_BASE_URL = '/api';
+// Use environment variable if available, otherwise default to /api for proxying
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
  * Get authentication token from localStorage
@@ -179,5 +179,50 @@ export async function checkServerHealth(): Promise<boolean> {
     return response.ok;
   } catch (error) {
     return false;
+  }
+}
+
+/**
+ * Process prompt and images with Gemini
+ */
+export interface ProcessRequest {
+  prompt: string;
+  images?: string[];
+}
+
+export interface ProcessResponse {
+  success: boolean;
+  text?: string;
+  elapsedTime?: number;
+  model?: string;
+  hasImages?: boolean;
+  error?: string;
+}
+
+export async function processWithGemini(request: ProcessRequest): Promise<ProcessResponse> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/process`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+    
+    const result: ProcessResponse = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Processing failed');
+    }
+    
+    return result;
+  } catch (error: any) {
+    console.error('Error processing with Gemini:', error);
+    throw new Error(error.message || 'Failed to process request');
   }
 }

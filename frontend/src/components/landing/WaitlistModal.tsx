@@ -47,9 +47,23 @@ export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(data.emailSent 
-          ? "You've been added to the waitlist! Check your email for confirmation." 
-          : "You've been added to the waitlist!");
+        if (data.isExisting) {
+          toast.success(<>
+    Welcome back!
+    <br />
+    Your email is already registered.
+    You're all set to explore NOVI AI!
+  </>
+          );
+        } else {
+          toast.success(<>
+    Congratulations! 
+    <br />
+    You've been successfully added to the NOVI AI waitlist!
+    Get ready to explore the only AI interface you need with free joining credits!
+  </>
+          );
+        }
         setEmail("");
         onClose();
       } else {
