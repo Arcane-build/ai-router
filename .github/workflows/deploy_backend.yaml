@@ -13,8 +13,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Build Hyperdex Backend Docker image
-      - name: Build Hyperdex Backend Docker image
+      # Step 2: Build noviai Backend Docker image
+      - name: Build noviai Backend Docker image
         run: |
           docker build \
             -t noviai-backend:latest \
@@ -82,7 +82,7 @@ jobs:
             # Ensure target directory exists
             mkdir -p ~/noviai
 
-            # Copy configuration files from home directory to hyperdex directory
+            # Copy configuration files from home directory to noviai directory
             if [ -f ~/.env.deploy ]; then
               cp ~/.env.deploy ~/noviai/.env
               echo "Created .env file from .env.deploy with dynamic DYNAMIC_ENV_ID"
@@ -93,11 +93,11 @@ jobs:
 
             # Copy docker-compose file if it exists
             if [ -f ~/docker-compose.prod.yml ]; then
-              cp ~/docker-compose.prod.yml ~/hyperdex/docker-compose.prod.yml
+              cp ~/docker-compose.prod.yml ~/noviai/docker-compose.prod.yml
             fi
 
             # Load new image
-            sudo docker load < ~/hyperdex-backend.tar.gz
+            sudo docker load < ~/noviai-backend.tar.gz
             
             # Stop and remove old container
             sudo docker stop noviai-backend || true
@@ -117,7 +117,7 @@ jobs:
               --cpus="${CPU_COUNT}" \
               --memory="${TOTAL_MEM_MB}m" \
               --memory-swap="${TOTAL_MEM_MB}m" \
-              hyperdex-backend:latest
+              noviai-backend:latest
             
             # Wait for container to start and be healthy
             echo "Waiting for container to be healthy..."
@@ -134,11 +134,11 @@ jobs:
             done
             
             # Verify container is running
-            if sudo docker ps | grep -q hyperdex-backend; then
+            if sudo docker ps | grep -q noviai-backend; then
               echo "Deployment successful! Container is running."
               
               # Show container status
-              sudo docker ps | grep hyperdex-backend
+              sudo docker ps | grep noviai-backend
               
               # Show health status
               curl -s http://localhost:3001/health | jq '.' || echo "Health endpoint response received"
@@ -161,6 +161,6 @@ jobs:
             else
               echo "Deployment failed! Container is not running."
               echo "Container logs:"
-              sudo docker logs hyperdex-backend || true
+              sudo docker logs noviai-backend || true
               exit 1
             fi
