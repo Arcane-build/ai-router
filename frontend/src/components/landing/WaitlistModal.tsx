@@ -39,15 +39,13 @@ export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/waitlist`, {
+      await fetch(`${API_BASE_URL}/waitlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
       });
-
-      const data = await response.json();
 
       // Always show success message regardless of response
       toast.success(<>
