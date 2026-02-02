@@ -3,9 +3,7 @@ import { MODEL_CONFIG, getAllCategories, getModelsForCategory, getModel } from '
 import { generateContent } from '../services/falAI';
 import { authenticateUser } from '../middleware/auth';
 import { checkCredits, getCreditCost } from '../middleware/credits';
-import { deductCredits, getUserById } from '../services/userService';
-import { sendWaitlistConfirmation } from '../services/emailService';
-import { addToWaitlist, markEmailSent } from '../services/waitlistService';
+import { deductCredits, getUserById, createUser, getUserByEmail } from '../services/userService';
 
 const router = Router();
 
@@ -127,7 +125,7 @@ router.post('/generate', authenticateUser, checkCredits, async (req: Request, re
     }
 
     // Deduct credits after successful generation
-    const creditDeduction = deductCredits(userId, creditCost);
+    const creditDeduction = await deductCredits(userId, creditCost);
     if (!creditDeduction.success) {
       // This shouldn't happen since we checked credits before, but handle it anyway
       console.error('Failed to deduct credits after generation:', creditDeduction);
@@ -158,7 +156,7 @@ router.post('/generate', authenticateUser, checkCredits, async (req: Request, re
  * Get current user profile with credits
  * Requires: Authentication middleware
  */
-router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
+router.get('/user/profile', authenticateUser, async (req: Request, res: Response) => {
   try {
     // User is already attached by authenticateUser middleware
     if (!req.user) {
@@ -169,7 +167,7 @@ router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
     }
 
     // Get full user data
-    const user = getUserById(req.user.id);
+    const user = await getUserById(req.user.id);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -181,7 +179,7 @@ router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
       success: true,
       data: {
         user: {
-          id: user.id,
+          id: user._id.toString(),
           email: user.email,
           credits: user.credits,
           createdAt: user.createdAt,
@@ -200,12 +198,12 @@ router.get('/user/profile', authenticateUser, (req: Request, res: Response) => {
 
 /**
  * POST /api/waitlist
- * Join the waitlist and receive confirmation email
+ * Join the waitlist - saves user to database
  * Body: { email: string, name?: string }
  */
 router.post('/waitlist', async (req: Request, res: Response) => {
   try {
-    const { email, name } = req.body;
+    const { email } = req.body;
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -216,55 +214,29 @@ router.post('/waitlist', async (req: Request, res: Response) => {
       });
     }
 
-    // Get IP address for tracking
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
-
-    // Add to waitlist database
-    const waitlistResult = addToWaitlist(email, name, ipAddress);
-
-    if (!waitlistResult.success) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to add to waitlist. Please try again.',
-      });
-    }
-
-    // If already on waitlist, return early
-    if (!waitlistResult.isNew) {
+    // Check if user already exists
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
       return res.status(200).json({
         success: true,
-        message: 'You are already on the waitlist!',
-        emailSent: true,
+        message: 'Email already registered!',
+        isExisting: true,
       });
     }
 
-    // Send confirmation email
-    const emailResult = await sendWaitlistConfirmation({ email, name });
+    // Create new user in database
+    const newUser = await createUser(email);
 
-    // Mark email as sent/failed in database
-    if (emailResult.success) {
-      markEmailSent(email, true);
-      console.log(`✅ Waitlist complete: ${email} | Email sent successfully`);
-      
-      return res.json({
-        success: true,
-        message: 'Welcome to the waitlist! Check your email for confirmation.',
-        emailSent: true,
-      });
-    } else {
-      markEmailSent(email, false);
-      console.error(`⚠️ Waitlist saved but email failed: ${email}`);
-      
-      // Still return success since they're on the waitlist
-      return res.status(200).json({
-        success: true,
-        message: 'You have been added to the waitlist!',
-        emailSent: false,
-        warning: 'Email confirmation could not be sent. We have your email saved.'
-      });
-    }
+    console.log(`✅ User registered: ${email} (ID: ${newUser._id}) | Credits: ${newUser.credits}`);
+    
+    return res.json({
+      success: true,
+      message: 'Successfully registered! You can now log in.',
+      isExisting: false,
+    });
+
   } catch (error: any) {
-    console.error('❌ Waitlist error:', error);
+    console.error('❌ Registration error:', error);
     return res.status(500).json({
       success: false,
       error: 'An unexpected error occurred. Please try again later.',

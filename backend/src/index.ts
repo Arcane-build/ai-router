@@ -1,10 +1,12 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { connectDatabase } from './config/database';
 import apiRoutes from './routes/api';
 import authRoutes from './routes/auth';
 import { verifyEmailConfig } from './services/emailService';
 
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
 const app = express();
@@ -55,6 +57,15 @@ app.use((req: Request, res: Response) => {
 app.listen(PORT, async () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
+  
+  // Connect to MongoDB
+  console.log('\n🔗 Connecting to MongoDB...');
+  try {
+    await connectDatabase();
+  } catch (error) {
+    console.error('❌ Failed to connect to MongoDB:', error);
+    process.exit(1);
+  }
   
   // Verify email configuration
   console.log('\n📧 Checking email configuration...');

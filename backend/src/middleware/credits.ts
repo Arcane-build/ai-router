@@ -23,7 +23,7 @@ export function getCreditCost(category: string): number {
  * Middleware to check if user has sufficient credits
  * Must be used after authenticateUser middleware
  */
-export function checkCredits(req: Request, res: Response, next: NextFunction): void {
+export async function checkCredits(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Ensure user is authenticated (should be set by authenticateUser middleware)
     if (!req.user) {
@@ -48,7 +48,7 @@ export function checkCredits(req: Request, res: Response, next: NextFunction): v
     const creditCost = getCreditCost(category);
 
     // Get user and check credits
-    const user = getUserById(req.user.id);
+    const user = await getUserById(req.user.id);
     if (!user) {
       res.status(404).json({
         success: false,

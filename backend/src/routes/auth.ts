@@ -10,7 +10,7 @@ const router = Router();
  * Register a new user with email (or login if exists)
  * Body: { email: string }
  */
-router.post('/register', (req: Request, res: Response) => {
+router.post('/register', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
@@ -32,17 +32,17 @@ router.post('/register', (req: Request, res: Response) => {
     }
 
     // Create or get existing user
-    const user = createUser(email.trim());
+    const user = await createUser(email.trim());
 
     // Generate JWT token
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user._id.toString(), user.email);
 
     // Return user info and token
     res.json({
       success: true,
       data: {
         user: {
-          id: user.id,
+          id: user._id.toString(),
           email: user.email,
           credits: user.credits,
           createdAt: user.createdAt,
@@ -64,7 +64,7 @@ router.post('/register', (req: Request, res: Response) => {
  * Login with email (same as register for MVP - no password)
  * Body: { email: string }
  */
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
@@ -86,17 +86,17 @@ router.post('/login', (req: Request, res: Response) => {
     }
 
     // Get or create user
-    const user = createUser(email.trim());
+    const user = await createUser(email.trim());
 
     // Generate JWT token
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(user._id.toString(), user.email);
 
     // Return user info and token
     res.json({
       success: true,
       data: {
         user: {
-          id: user.id,
+          id: user._id.toString(),
           email: user.email,
           credits: user.credits,
           createdAt: user.createdAt,
@@ -118,7 +118,7 @@ router.post('/login', (req: Request, res: Response) => {
  * Get current authenticated user
  * Requires: Authentication middleware
  */
-router.get('/me', authenticateUser, (req: Request, res: Response) => {
+router.get('/me', authenticateUser, async (req: Request, res: Response) => {
   try {
     // User is already attached by authenticateUser middleware
     if (!req.user) {
@@ -129,7 +129,7 @@ router.get('/me', authenticateUser, (req: Request, res: Response) => {
     }
 
     // Get full user data
-    const user = getUserByEmail(req.user.email);
+    const user = await getUserByEmail(req.user.email);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -141,7 +141,7 @@ router.get('/me', authenticateUser, (req: Request, res: Response) => {
       success: true,
       data: {
         user: {
-          id: user.id,
+          id: user._id.toString(),
           email: user.email,
           credits: user.credits,
           createdAt: user.createdAt,

@@ -18,7 +18,7 @@ declare global {
  * Authentication middleware
  * Verifies JWT token and attaches user to request
  */
-export function authenticateUser(req: Request, res: Response, next: NextFunction): void {
+export async function authenticateUser(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -43,7 +43,7 @@ export function authenticateUser(req: Request, res: Response, next: NextFunction
     }
 
     // Verify user still exists
-    const user = getUserById(payload.userId);
+    const user = await getUserById(payload.userId);
     if (!user) {
       res.status(401).json({
         success: false,
@@ -54,7 +54,7 @@ export function authenticateUser(req: Request, res: Response, next: NextFunction
 
     // Attach user to request
     req.user = {
-      id: user.id,
+      id: user._id.toString(),
       email: user.email,
     };
 

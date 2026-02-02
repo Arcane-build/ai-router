@@ -1,5 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
-import { User, findUserByEmail, findUserById, saveUser, readUsers } from '../utils/storage';
+import { User, IUser } from '../models/User';
 
 const INITIAL_CREDITS = 5000;
 
@@ -7,54 +6,53 @@ const INITIAL_CREDITS = 5000;
  * Create a new user with email
  * Returns existing user if email already exists
  */
-export function createUser(email: string): User {
+export async function createUser(email: string): Promise<IUser> {
   // Check if user already exists
-  const existingUser = findUserByEmail(email);
+  const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
   if (existingUser) {
     // Update last login
-    existingUser.lastLogin = new Date().toISOString();
-    saveUser(existingUser);
+    existingUser.lastLogin = new Date();
+    await existingUser.save();
     return existingUser;
   }
 
   // Create new user
-  const newUser: User = {
-    id: uuidv4(),
+  const newUser = new User({
     email: email.toLowerCase().trim(),
     credits: INITIAL_CREDITS,
-    createdAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-  };
+    createdAt: new Date(),
+    lastLogin: new Date(),
+  });
 
-  saveUser(newUser);
+  await newUser.save();
   return newUser;
 }
 
 /**
  * Get user by email
  */
-export function getUserByEmail(email: string): User | undefined {
-  return findUserByEmail(email);
+export async function getUserByEmail(email: string): Promise<IUser | null> {
+  return await User.findOne({ email: email.toLowerCase().trim() });
 }
 
 /**
  * Get user by ID
  */
-export function getUserById(id: string): User | undefined {
-  return findUserById(id);
+export async function getUserById(id: string): Promise<IUser | null> {
+  return await User.findById(id);
 }
 
 /**
  * Update user credits (add or subtract)
  */
-export function updateUserCredits(userId: string, amount: number): User | null {
-  const user = findUserById(userId);
+export async function updateUserCredits(userId: string, amount: number): Promise<IUser | null> {
+  const user = await User.findById(userId);
   if (!user) {
     return null;
   }
 
   user.credits = Math.max(0, user.credits + amount);
-  saveUser(user);
+  await user.save();
   return user;
 }
 
@@ -62,8 +60,8 @@ export function updateUserCredits(userId: string, amount: number): User | null {
  * Deduct credits from user
  * Returns true if deduction was successful, false if insufficient credits
  */
-export function deductCredits(userId: string, amount: number): { success: boolean; user: User | null } {
-  const user = findUserById(userId);
+export async function deductCredits(userId: string, amount: number): Promise<{ success: boolean; user: IUser | null }> {
+  const user = await User.findById(userId);
   if (!user) {
     return { success: false, user: null };
   }
@@ -73,13 +71,13 @@ export function deductCredits(userId: string, amount: number): { success: boolea
   }
 
   user.credits -= amount;
-  saveUser(user);
+  await user.save();
   return { success: true, user };
 }
 
 /**
  * Get all users (for admin purposes, if needed)
  */
-export function getAllUsers(): User[] {
-  return readUsers();
+export async function getAllUsers(): Promise<IUser[]> {
+  return await User.find();
 }
