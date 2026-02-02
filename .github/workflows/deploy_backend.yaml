@@ -1,4 +1,4 @@
-name: Deploy Hyperdex Backend to EC2 (Asia Region)
+name: Deploy NoviAI Backend to EC2 (Asia Region)
 
 on:
   push:
@@ -17,14 +17,14 @@ jobs:
       - name: Build Hyperdex Backend Docker image
         run: |
           docker build \
-            -t hyperdex-backend:latest \
+            -t noviai-backend:latest \
             -f backend/Dockerfile \
             backend/
 
       # Step 3: Save Docker image as tar
       - name: Save Docker image
         run: |
-          docker save hyperdex-backend:latest | gzip > hyperdex-backend.tar.gz
+          docker save noviai-backend:latest | gzip > noviai-backend.tar.gz
 
       # Step 4: Copy image to EC2
       - name: Copy image to EC2
@@ -33,7 +33,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: "hyperdex-backend.tar.gz"
+          source: "noviai-backend.tar.gz"
           target: "~/"
 
       # Step 4.5: Create dynamic .env file and copy to EC2
@@ -77,14 +77,14 @@ jobs:
           username: ${{ secrets.EC2_USER }} 
           key: ${{ secrets.EC2_KEY }}
           script: |
-            # Remove existing hyperdex directory
-            rm -rf ~/hyperdex
+            # Remove existing noviai directory
+            rm -rf ~/noviai
             # Ensure target directory exists
-            mkdir -p ~/hyperdex
+            mkdir -p ~/noviai
 
             # Copy configuration files from home directory to hyperdex directory
             if [ -f ~/.env.deploy ]; then
-              cp ~/.env.deploy ~/hyperdex/.env
+              cp ~/.env.deploy ~/noviai/.env
               echo "Created .env file from .env.deploy with dynamic DYNAMIC_ENV_ID"
             else
               echo "Error: .env.deploy not found! Cannot create .env file."
@@ -100,8 +100,8 @@ jobs:
             sudo docker load < ~/hyperdex-backend.tar.gz
             
             # Stop and remove old container
-            sudo docker stop hyperdex-backend || true
-            sudo docker rm hyperdex-backend || true
+            sudo docker stop noviai-backend || true
+            sudo docker rm noviai-backend || true
             
             # Run new container with health check using host network
             # Configured to use maximum available CPU and memory resources
@@ -110,9 +110,9 @@ jobs:
             TOTAL_MEM_MB=$((TOTAL_MEM - 512))  # Reserve 512MB for system
             CPU_COUNT=$(nproc)
             
-            sudo docker run -d --name hyperdex-backend \
+            sudo docker run -d --name noviai-backend \
               --network host \
-              --env-file ~/hyperdex/.env \
+              --env-file ~/noviai/.env \
               --restart unless-stopped \
               --cpus="${CPU_COUNT}" \
               --memory="${TOTAL_MEM_MB}m" \
@@ -155,7 +155,7 @@ jobs:
               sudo docker image prune -a -f --filter "until=24h"
               
               # Clean up tar file
-              rm -f ~/hyperdex-backend.tar.gz
+              rm -f ~/noviai-backend.tar.gz
               
               echo "Cleanup completed successfully!"
             else
