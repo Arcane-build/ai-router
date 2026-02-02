@@ -9,6 +9,10 @@
     {
       "source": "/health",
       "destination": "http://44.223.69.157:3001/health"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
