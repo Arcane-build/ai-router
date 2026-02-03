@@ -49,6 +49,12 @@ jobs:
             echo "Warning: .env.example not found, creating empty .env.deploy"
             touch .env.deploy
           fi
+          # Replace or add MONGODB_URI from GitHub secrets
+          if grep -q "^MONGODB_URI=" .env.deploy; then
+            sed -i "s|^MONGODB_URI=.*|MONGODB_URI=${{ secrets.MONGODB_URI }}|g" .env.deploy
+          else
+            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env.deploy
+          fi
           # Replace or add FAL_KEY from GitHub secrets
           if grep -q "^FAL_KEY=" .env.deploy; then
             sed -i "s/^FAL_KEY=.*/FAL_KEY=${{ secrets.FAL_KEY }}/g" .env.deploy
