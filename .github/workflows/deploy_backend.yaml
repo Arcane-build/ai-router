@@ -49,27 +49,31 @@ jobs:
             echo "Warning: .env.example not found, creating empty .env.deploy"
             touch .env.deploy
           fi
-          # Replace or add MONGODB_URI from GitHub secrets
-          if grep -q "^MONGODB_URI=" .env.deploy; then
-            sed -i "s|^MONGODB_URI=.*|MONGODB_URI=${{ secrets.MONGODB_URI }}|g" .env.deploy
-          else
-            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env.deploy
-          fi
-          # Replace or add FAL_KEY from GitHub secrets
-          if grep -q "^FAL_KEY=" .env.deploy; then
-            sed -i "s/^FAL_KEY=.*/FAL_KEY=${{ secrets.FAL_KEY }}/g" .env.deploy
-          else
-            echo "FAL_KEY=${{ secrets.FAL_KEY }}" >> .env.deploy
-          fi
-          # Replace or add GEMINI_KEY from GitHub secrets
-          if grep -q "^GEMINI_KEY=" .env.deploy; then
-            sed -i "s/^GEMINI_KEY=.*/GEMINI_KEY=${{ secrets.GEMINI_KEY }}/g" .env.deploy
-          else
-            echo "GEMINI_KEY=${{ secrets.GEMINI_KEY }}" >> .env.deploy
-          fi
-          # Replace DYNAMIC_ENV_ID with the value from secrets if it exists
-          if grep -q "DYNAMIC_ENV_ID" .env.deploy; then
-            sed -i "s/DYNAMIC_ENV_ID=.*/DYNAMIC_ENV_ID=${{ secrets.DYNAMIC_ENV_ID }}/g" .env.deploy
+          
+          # Function to safely replace or add environment variables
+          update_env_var() {
+            local key=$1
+            local value=$2
+            local file=$3
+            
+            if grep -q "^${key}=" "$file"; then
+              # Use a temporary file to avoid sed issues with special characters
+              grep -v "^${key}=" "$file" > "${file}.tmp"
+              echo "${key}=${value}" >> "${file}.tmp"
+              mv "${file}.tmp" "$file"
+            else
+              echo "${key}=${value}" >> "$file"
+            fi
+          }
+          
+          # Update environment variables using the safe function
+          update_env_var "MONGODB_URI" "${{ secrets.MONGODB_URI }}" ".env.deploy"
+          update_env_var "FAL_KEY" "${{ secrets.FAL_KEY }}" ".env.deploy"
+          update_env_var "GEMINI_KEY" "${{ secrets.GEMINI_KEY }}" ".env.deploy"
+          
+          # Handle DYNAMIC_ENV_ID if it exists
+          if [ -n "${{ secrets.DYNAMIC_ENV_ID }}" ]; then
+            update_env_var "DYNAMIC_ENV_ID" "${{ secrets.DYNAMIC_ENV_ID }}" ".env.deploy"
           fi
 
       - name: Copy configuration files to EC2
