@@ -76,13 +76,29 @@ jobs:
             update_env_var "DYNAMIC_ENV_ID" "${{ secrets.DYNAMIC_ENV_ID }}" ".env.deploy"
           fi
 
+      # Step 4.6: Prepare nginx configuration with domain name
+      - name: Prepare nginx configuration
+        run: |
+          # Copy nginx template
+          cp backend/nginx.conf.template nginx.conf.deploy
+          
+          # Replace DOMAIN_NAME placeholder with actual domain from secret
+          if [ -n "${{ secrets.BACKEND_DOMAIN }}" ]; then
+            sed -i "s/DOMAIN_NAME/${{ secrets.BACKEND_DOMAIN }}/g" nginx.conf.deploy
+            echo "Configured nginx for domain: ${{ secrets.BACKEND_DOMAIN }}"
+          else
+            # Use default placeholder if no domain is set
+            echo "No BACKEND_DOMAIN secret found, using default configuration"
+            sed -i "s/DOMAIN_NAME/_/g" nginx.conf.deploy
+          fi
+
       - name: Copy configuration files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: ".env.deploy,docker-compose.prod.yml"
+          source: ".env.deploy,backend/docker-compose.yml,nginx.conf.deploy"
           target: "~/"
 
       # Step 5: SSH into EC2 and deploy container
@@ -107,41 +123,44 @@ jobs:
               exit 1
             fi
 
-            # Copy docker-compose file if it exists
-            if [ -f ~/docker-compose.prod.yml ]; then
-              cp ~/docker-compose.prod.yml ~/noviai/docker-compose.prod.yml
+            # Copy docker-compose and nginx config files
+            if [ -f ~/docker-compose.yml ]; then
+              cp ~/docker-compose.yml ~/noviai/docker-compose.yml
+            else
+              echo "Error: docker-compose.yml not found!"
+              exit 1
             fi
-
-            # Load new image
+            
+            if [ -f ~/nginx.conf.deploy ]; then
+              cp ~/nginx.conf.deploy ~/noviai/nginx.conf
+              echo "✅ Copied nginx configuration"
+            else
+              echo "Error: nginx.conf.deploy not found!"
+              exit 1
+            fi
+            
+            # Create certbot directories for SSL certificates
+            mkdir -p ~/noviai/certbot/conf
+            mkdir -p ~/noviai/certbot/www
+            
+            # Load new backend image
             sudo docker load < ~/noviai-backend.tar.gz
             
-            # Stop and remove old container
-            sudo docker stop noviai-backend || true
-            sudo docker rm noviai-backend || true
+            # Stop and remove old containers
+            cd ~/noviai
+            # Try docker-compose (older) or docker compose (newer)
+            sudo docker-compose down 2>/dev/null || sudo docker compose down 2>/dev/null || true
             
-            # Run new container with health check using host network
-            # Configured to use maximum available CPU and memory resources
-            # Dynamically detect and use all available system resources
-            TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
-            TOTAL_MEM_MB=$((TOTAL_MEM - 512))  # Reserve 512MB for system
-            CPU_COUNT=$(nproc)
+            # Start containers using docker-compose
+            sudo docker-compose up -d 2>/dev/null || sudo docker compose up -d
             
-            sudo docker run -d --name noviai-backend \
-              --network host \
-              --env-file ~/noviai/.env \
-              --restart unless-stopped \
-              --cpus="${CPU_COUNT}" \
-              --memory="${TOTAL_MEM_MB}m" \
-              --memory-swap="${TOTAL_MEM_MB}m" \
-              noviai-backend:latest
+            # Wait for containers to start and be healthy
+            echo "Waiting for containers to be healthy..."
+            sleep 20
             
-            # Wait for container to start and be healthy
-            echo "Waiting for container to be healthy..."
-            sleep 15
-            
-            # Check health endpoint
+            # Check backend health endpoint (through nginx)
             for i in {1..10}; do
-              if curl -f http://localhost:3001/health > /dev/null 2>&1; then
+              if curl -f http://localhost/health > /dev/null 2>&1 || curl -f http://localhost:3001/health > /dev/null 2>&1; then
                 echo "Health check passed!"
                 break
               fi
@@ -149,15 +168,22 @@ jobs:
               sleep 5
             done
             
-            # Verify container is running
-            if sudo docker ps | grep -q noviai-backend; then
-              echo "Deployment successful! Container is running."
+            # Verify containers are running
+            BACKEND_RUNNING=$(sudo docker ps | grep -q noviai-backend && echo "yes" || echo "no")
+            NGINX_RUNNING=$(sudo docker ps | grep -q noviai-nginx && echo "yes" || echo "no")
+            
+            if [ "$BACKEND_RUNNING" = "yes" ] && [ "$NGINX_RUNNING" = "yes" ]; then
+              echo "Deployment successful! Containers are running."
               
               # Show container status
-              sudo docker ps | grep noviai-backend
+              sudo docker ps | grep -E "(noviai-backend|noviai-nginx)"
               
               # Show health status
-              curl -s http://localhost:3001/health | jq '.' || echo "Health endpoint response received"
+              echo "Backend health (via nginx):"
+              curl -s http://localhost/health | jq '.' || curl -s http://localhost:3001/health | jq '.' || echo "Health endpoint response received"
+              
+              echo "Nginx health:"
+              curl -s http://localhost/nginx-health || echo "Nginx health check"
               
               echo "Cleaning up old images and containers..."
               
@@ -175,8 +201,17 @@ jobs:
               
               echo "Cleanup completed successfully!"
             else
-              echo "Deployment failed! Container is not running."
-              echo "Container logs:"
+              echo "Deployment failed! One or more containers are not running."
+              echo "Backend container status: $BACKEND_RUNNING"
+              echo "Nginx container status: $NGINX_RUNNING"
+              echo ""
+              echo "Backend logs:"
               sudo docker logs noviai-backend || true
+              echo ""
+              echo "Nginx logs:"
+              sudo docker logs noviai-nginx || true
+              echo ""
+              echo "All containers:"
+              sudo docker ps -a
               exit 1
             fi

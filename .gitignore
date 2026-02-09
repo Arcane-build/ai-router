@@ -33,3 +33,9 @@ yarn-error.log*
 # Vite
 frontend/dist/
 frontend/.vite/
+
+# SSL certificates (local testing)
+backend/ssl/
+*.crt
+*.key
+*.pem
