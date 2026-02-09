@@ -1,5 +1,8 @@
 services:
   backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: noviai-backend:latest
     container_name: noviai-backend
     restart: unless-stopped
@@ -7,9 +10,6 @@ services:
       - .env
     networks:
       - app-network
-    # Don't expose ports directly - nginx will handle it
-    # ports:
-    #   - "3001:3001"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s

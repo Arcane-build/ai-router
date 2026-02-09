@@ -150,16 +150,37 @@ jobs:
             mkdir -p ~/noviai/certbot/conf
             mkdir -p ~/noviai/certbot/www
             
-            # Load new backend image
-            sudo docker load < ~/noviai-backend.tar.gz
+            # Load new backend image (if tar file exists)
+            if [ -f ~/noviai-backend.tar.gz ]; then
+              sudo docker load < ~/noviai-backend.tar.gz
+              echo "Loaded backend image from tar"
+            else
+              echo "Warning: noviai-backend.tar.gz not found, docker compose will build if needed"
+            fi
             
             # Stop and remove old containers
             cd ~/noviai
-            # Try docker-compose (older) or docker compose (newer)
-            sudo docker-compose down 2>/dev/null || sudo docker compose down 2>/dev/null || true
             
-            # Start containers using docker-compose
-            sudo docker-compose up -d 2>/dev/null || sudo docker compose up -d
+            # Use docker compose down to stop and remove containers
+            sudo docker compose down 2>/dev/null || true
+            
+            # Start containers using docker compose (will build if image doesn't exist)
+            sudo docker compose up -d --build
+            
+            # Verify containers started
+            sleep 5
+            if ! sudo docker ps | grep -q noviai-backend; then
+              echo "Error: Backend container failed to start"
+              sudo docker logs noviai-backend 2>/dev/null || echo "No backend logs available"
+              exit 1
+            fi
+            
+            if ! sudo docker ps | grep -q noviai-nginx; then
+              echo "Error: Nginx container failed to start"
+              sudo docker logs noviai-nginx 2>/dev/null || echo "No nginx logs available"
+              sudo docker compose logs nginx 2>/dev/null || true
+              exit 1
+            fi
             
             # Wait for containers to start and be healthy
             echo "Waiting for containers to be healthy..."
