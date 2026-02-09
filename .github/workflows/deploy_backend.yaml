@@ -91,6 +91,9 @@ jobs:
             echo "No BACKEND_DOMAIN secret found, using default configuration"
             sed -i "s/DOMAIN_NAME/_/g" nginx.conf.deploy
           fi
+          
+          # Copy docker-compose.yml to root for SCP
+          cp backend/docker-compose.yml docker-compose.yml.deploy
 
       - name: Copy configuration files to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -98,7 +101,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: ".env.deploy,backend/docker-compose.yml,nginx.conf.deploy"
+          source: ".env.deploy,docker-compose.yml.deploy,nginx.conf.deploy"
           target: "~/"
 
       # Step 5: SSH into EC2 and deploy container
@@ -124,16 +127,20 @@ jobs:
             fi
 
             # Copy docker-compose and nginx config files
-            if [ -f ~/docker-compose.yml ]; then
+            if [ -f ~/docker-compose.yml.deploy ]; then
+              cp ~/docker-compose.yml.deploy ~/noviai/docker-compose.yml
+              echo "Copied docker-compose.yml"
+            elif [ -f ~/docker-compose.yml ]; then
               cp ~/docker-compose.yml ~/noviai/docker-compose.yml
+              echo "Copied docker-compose.yml (fallback)"
             else
-              echo "Error: docker-compose.yml not found!"
+              echo "Error: docker-compose.yml.deploy not found!"
               exit 1
             fi
             
             if [ -f ~/nginx.conf.deploy ]; then
               cp ~/nginx.conf.deploy ~/noviai/nginx.conf
-              echo "✅ Copied nginx configuration"
+              echo "Copied nginx configuration"
             else
               echo "Error: nginx.conf.deploy not found!"
               exit 1
