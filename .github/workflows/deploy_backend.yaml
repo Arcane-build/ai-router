@@ -161,8 +161,16 @@ jobs:
             # Stop and remove old containers
             cd ~/noviai
             
-            # Use docker compose down to stop and remove containers
+            # Stop and remove containers by name first (in case they were started differently)
+            sudo docker stop noviai-backend noviai-nginx 2>/dev/null || true
+            sleep 2
+            sudo docker rm noviai-backend noviai-nginx 2>/dev/null || true
+            
+            # Use docker compose down to clean up networks (may fail if containers don't exist, that's ok)
             sudo docker compose down 2>/dev/null || true
+            
+            # Double check containers are gone
+            sudo docker rm noviai-backend noviai-nginx 2>/dev/null || true
             
             # Start containers using docker compose
             sudo docker compose up -d
