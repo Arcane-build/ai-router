@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react';
 interface Model {
   name: string;
   description: string;
-  icon: string;
+  icon?: string;
 }
 
 interface TrendingModelsProps {
@@ -21,9 +21,11 @@ export const TrendingModels = ({ models }: TrendingModelsProps) => {
             className="flex-shrink-0 w-56 md:w-64 p-4 md:p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/10 hover:bg-white/[0.05] transition-all cursor-pointer group"
           >
             <div className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3">
-              <div className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-white/5 flex items-center justify-center text-[10px] md:text-xs border border-white/10 group-hover:border-white/20 transition-colors">
-                {model.icon}
-              </div>
+              {model.icon ? (
+                <div className="w-5 h-5 md:w-6 md:h-6 rounded-md bg-white/5 flex items-center justify-center text-[10px] md:text-xs border border-white/10 group-hover:border-white/20 transition-colors">
+                  {model.icon}
+                </div>
+              ) : null}
               <h4 className="text-xs md:text-sm font-semibold text-gray-200">{model.name}</h4>
             </div>
             <p className="text-[10px] md:text-xs text-gray-500 leading-relaxed line-clamp-2">{model.description}</p>

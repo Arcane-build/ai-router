@@ -188,13 +188,23 @@ export async function checkServerHealth(): Promise<boolean> {
 export interface ProcessRequest {
   prompt: string;
   images?: string[];
+  category?: string;
+  model?: string;
+  additionalParams?: Record<string, any>;
 }
 
 export interface ProcessResponse {
   success: boolean;
   text?: string;
+  data?: any;
   elapsedTime?: number;
   model?: string;
+  category?: string;
+  selectedModel?: string;
+  reasoning?: string;
+  confidence?: number;
+  requestId?: string;
+  cost?: number;
   hasImages?: boolean;
   error?: string;
 }

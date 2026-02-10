@@ -16,6 +16,48 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .break-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  
+  .word-break-break-word {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+}
+
+/* Ensure all text containers respect boundaries */
+.prose {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+.prose * {
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
+}
+
+.prose p,
+.prose li,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose blockquote {
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 0%;

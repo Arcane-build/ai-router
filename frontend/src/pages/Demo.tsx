@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { processWithGemini } from '@/services/api';
+import { fetchTools, processWithGemini } from '@/services/api';
+import type { ToolCategory, ModelInfo } from '@/services/api';
 import { toast } from '@/components/ui/sonner';
 import { 
   Menu,
@@ -15,9 +16,11 @@ import { TrendingModels } from '@/components/chat/TrendingModels';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  images?: string[];
+  images?: string[]; // User-uploaded images (base64 data URLs)
+  generatedImages?: string[]; // Generated images (URLs)
   model?: string;
   elapsedTime?: number;
+  reasoning?: string;
 }
 
 const Demo = () => {
@@ -27,6 +30,10 @@ const Demo = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [tools, setTools] = useState<ToolCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [hasManualSelection, setHasManualSelection] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -36,6 +43,23 @@ const Demo = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const all = await fetchTools();
+        if (!mounted) return;
+        setTools(all);
+
+        // Don't set defaults - let backend auto-select
+        // User can manually select if they want
+      } catch (e: any) {
+        console.warn('Failed to fetch tools for demo model selector:', e?.message || e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -100,10 +124,24 @@ const Demo = () => {
         imageDataUrls.push(base64);
       }
 
-      const response = await processWithGemini({
+      const request: any = {
         prompt: currentPrompt,
         images: imageDataUrls.length > 0 ? imageDataUrls : undefined,
-      });
+      };
+
+      // Only send category/model if user explicitly selected one
+      // Otherwise, backend will auto-select the best model based on prompt analysis
+      if (!request.images && hasManualSelection && selectedCategory && selectedModel) {
+        request.category = selectedCategory;
+        request.model = selectedModel;
+      }
+
+      const response = await processWithGemini(request);
+
+      // Log to verify reasoning is in response
+      if (!response.reasoning) {
+        console.warn('No reasoning in response:', response);
+      }
 
       let cleanText = response.text || '';
       
@@ -119,12 +157,57 @@ const Demo = () => {
         }
       }
 
+      // Extract generated images from response data
+      let generatedImages: string[] = [];
+      if (response.data) {
+        try {
+          // Check if data has images array (fal.ai image generation format)
+          if (response.data.images && Array.isArray(response.data.images)) {
+            generatedImages = response.data.images
+              .map((img: any) => img.url || img)
+              .filter((url: string) => url && typeof url === 'string');
+          }
+          // Check if data itself is an array of images
+          else if (Array.isArray(response.data) && response.data.length > 0 && response.data[0]?.url) {
+            generatedImages = response.data
+              .map((img: any) => img.url || img)
+              .filter((url: string) => url && typeof url === 'string');
+          }
+          // Check if data has a single image URL
+          else if (response.data.url && typeof response.data.url === 'string') {
+            generatedImages = [response.data.url];
+          }
+        } catch (e) {
+          console.warn('Failed to extract images from response:', e);
+        }
+      }
+
+      // If backend returned structured data (e.g. fal-ai images/videos/tts), show a readable summary
+      if (!cleanText && response.data && generatedImages.length === 0) {
+        try {
+          cleanText = JSON.stringify(response.data, null, 2);
+        } catch {
+          cleanText = String(response.data);
+        }
+      }
+
+      // If we have generated images, show a simple message
+      if (generatedImages.length > 0 && !cleanText) {
+        cleanText = `Generated ${generatedImages.length} image${generatedImages.length > 1 ? 's' : ''}`;
+      }
+
       const assistantMessage: Message = {
         role: 'assistant',
-        content: cleanText,
-        model: response.model,
-        elapsedTime: response.elapsedTime
+        content: cleanText || '(no output)',
+        generatedImages: generatedImages.length > 0 ? generatedImages : undefined,
+        model: response.selectedModel || response.model || selectedModel,
+        elapsedTime: response.elapsedTime,
+        reasoning: response.reasoning || undefined
       };
+
+      // Debug: Log reasoning
+      console.log('Response reasoning:', response.reasoning);
+      console.log('Message reasoning:', assistantMessage.reasoning);
       
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err: any) {
@@ -141,24 +224,27 @@ const Demo = () => {
     {
       name: 'Claude v2.1',
       description: 'This a low latency version of Claude v2.1.',
-      icon: '🟠',
+      icon: '',
     },
     {
       name: 'Gpt-3.5 Turbo',
       description: "GPT-3.5 Turbo is OpenAI's fastest model.",
-      icon: '🟢',
+      icon: '',
     },
     {
       name: 'Llava 13B',
       description: 'Llava is a large multimodal model that combines a vision...',
-      icon: '🔵',
+      icon: '',
     },
     {
       name: 'Zephyr',
       description: 'Zephyr is a series of language models that are trained to act.',
-      icon: '⚪',
+      icon: '',
     },
   ];
+
+  const modelsForSelectedCategory: ModelInfo[] =
+    tools.find(t => t.category === selectedCategory)?.models || [];
 
   return (
     <div className="min-h-screen bg-black text-white flex">
@@ -193,8 +279,8 @@ const Demo = () => {
         </header>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-8 md:py-12 scrollbar-hide pb-48">
-          <div className="max-w-4xl mx-auto space-y-8 md:space-y-12">
+        <div className="flex-1 overflow-y-auto px-4 md:px-8 py-8 md:py-12 scrollbar-hide pb-64 md:pb-80">
+          <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 w-full">
             {messages.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
                 <h2 className="text-3xl md:text-5xl font-tobias font-light mb-12 md:mb-24 tracking-tight">Welcome to Novi.AI</h2>
@@ -222,12 +308,74 @@ const Demo = () => {
         </div>
 
         {/* Fixed Bottom Area */}
-        <div className="fixed bottom-0 left-0 lg:left-64 right-0 p-4 md:p-8 bg-gradient-to-t from-black via-black to-transparent z-10">
+        <div className="fixed bottom-0 left-0 lg:left-64 right-0 p-4 md:p-8 bg-gradient-to-t from-black via-black to-transparent z-20 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
             
             {/* Trending Models Section */}
             {messages.length === 0 && (
               <TrendingModels models={trendingModels} />
+            )}
+
+            {/* Task + Model Selector */}
+            {tools.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory('');
+                      setSelectedModel('');
+                      setHasManualSelection(false);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-[11px] border transition-colors whitespace-nowrap ${
+                      !hasManualSelection
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                    }`}
+                  >
+                    Auto-select
+                  </button>
+                  {tools.map((t) => (
+                    <button
+                      key={t.category}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(t.category);
+                        setSelectedModel(t.models?.[0]?.name || '');
+                        setHasManualSelection(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-[11px] border transition-colors whitespace-nowrap ${
+                        selectedCategory === t.category && hasManualSelection
+                          ? 'bg-white/10 border-white/20 text-white'
+                          : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
+                    >
+                      {t.category}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide no-scrollbar">
+                  {hasManualSelection && modelsForSelectedCategory.map((m) => (
+                    <button
+                      key={m.name}
+                      type="button"
+                      onClick={() => {
+                        setSelectedModel(m.name);
+                        setHasManualSelection(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-[11px] border transition-colors whitespace-nowrap ${
+                        selectedModel === m.name
+                          ? 'bg-white/10 border-white/20 text-white'
+                          : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                      }`}
+                      title={m.pros?.[0] || m.description}
+                    >
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* Input Box */}
