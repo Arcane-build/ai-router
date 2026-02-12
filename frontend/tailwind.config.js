@@ -84,6 +84,7 @@ export default {
       fontFamily: {
         'roboto-mono': ['"Roboto Mono"', 'monospace'],
         'tobias': ['Tobias', 'serif'],
+        'satoshi': ['Satoshi', 'sans-serif'],
       },
     },
   },

@@ -2,10 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-// import Login from "./pages/Login";
+import Login from "./pages/Login";
+import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -19,14 +19,15 @@ const App = () => (
       <Sonner />
       <HashRouter>
         <Routes>
-          {/* Public route */}
-          {/* <Route path="/login" element={<Login />} /> */}
+          {/* Public routes */}
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          
+          {/* Chat routes - No auth required for testing */}
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/chat/:chatId" element={<Chat />} />
           
           {/* Protected routes */}
-          <Route
-            path="/"
-            element={<Index />}
-          />
           <Route
             path="/profile"
             element={

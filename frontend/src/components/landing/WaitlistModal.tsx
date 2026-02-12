@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { X, Send, Loader2 } from "lucide-react";
+import { X, Send, Key, Loader2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 
@@ -11,6 +11,7 @@ interface WaitlistModalProps {
 
 export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -109,6 +110,18 @@ export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
               />
               <Send className="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
             </div>
+            <div className="relative">
+               <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="off"
+                required
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all text-sm font-sans"
+              />
+              <Key className="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2" />
+            </div>
 
             <button
               type="submit"
@@ -118,10 +131,10 @@ export const WaitlistModal = ({ isOpen, onClose }: WaitlistModalProps) => {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  JOINING...
+                  Starting...
                 </>
               ) : (
-                "JOIN WAITLIST"
+                "GET STARTED"
               )}
             </button>
           </form>

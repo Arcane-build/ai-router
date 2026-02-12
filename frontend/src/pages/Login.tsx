@@ -41,8 +41,8 @@ const Login = () => {
         description: 'You have been successfully logged in'
       });
       
-      // Redirect to home page
-      navigate('/');
+      // Redirect to chat page
+      navigate('/chat');
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error('Login failed', {

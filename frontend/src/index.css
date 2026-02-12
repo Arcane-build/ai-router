@@ -1,13 +1,14 @@
 @font-face {
-  font-family: 'Roboto Mono';
-  src: url('/Roboto_Mono/RobotoMono-VariableFont_wght.ttf') format('truetype');
+  font-family: "Roboto Mono";
+  src: url("/Roboto_Mono/RobotoMono-VariableFont_wght.ttf") format("truetype");
   font-weight: 100 700;
   font-style: normal;
 }
 
 @font-face {
-  font-family: 'Tobias';
-  src: url('/tobias-font-family-1739017590-0/TobiasTRIAL-Regular-BF6719af6e0eca4.otf') format('opentype');
+  font-family: "Tobias";
+  src: url("/tobias-font-family-1739017590-0/TobiasTRIAL-Regular-BF6719af6e0eca4.otf")
+    format("opentype");
   font-weight: 400;
   font-style: normal;
 }
@@ -44,7 +45,7 @@
     --gradient-card: linear-gradient(145deg, hsl(0 0% 5%), hsl(0 0% 10%));
     --shadow-elegant: 0 10px 30px -10px rgba(255, 255, 255, 0.1);
     --shadow-glow: 0 0 40px rgba(255, 255, 255, 0.1);
-    --transition-smooth: all .3s cubic-bezier(.4, 0, .2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
@@ -82,7 +83,11 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-family:
+      Inter,
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 }
 
@@ -113,7 +118,8 @@
   }
 
   @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0);
     }
     50% {
@@ -133,9 +139,18 @@
       box-shadow: var(--shadow-glow);
     }
   }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
 }
-
-
 
 /* Minimal Scrollbar */
 ::-webkit-scrollbar {

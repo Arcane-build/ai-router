@@ -57,7 +57,7 @@ export const Hero = () => {
                 className="flex-1 md:flex-none bg-white text-black font-roboto-mono text-[10px] sm:text-xs font-bold tracking-widest px-4 sm:px-8 py-4 rounded-full hover:bg-white/90 transition-colors uppercase whitespace-nowrap"
                 onClick={() => setIsWaitlistOpen(true)}
               >
-                Join Waitlist
+                Get Started
               </button>
               <a 
                 href="/Novi.pdf"
