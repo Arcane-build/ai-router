@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/sonner';
 import { 
   Menu,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
 // Modular Components
@@ -13,14 +14,46 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { TrendingModels } from '@/components/chat/TrendingModels';
 
+interface VideoData {
+  video: {
+    url: string;
+    content_type?: string;
+    file_name?: string;
+    width?: number;
+    height?: number;
+    fps?: number;
+    duration?: number;
+    num_frames?: number;
+  };
+  video_id?: string;
+  thumbnail?: {
+    url: string;
+    content_type?: string;
+    file_name?: string;
+    width?: number;
+    height?: number;
+  };
+  spritesheet?: {
+    url: string;
+    content_type?: string;
+    file_name?: string;
+    width?: number;
+    height?: number;
+  };
+}
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   images?: string[]; // User-uploaded images (base64 data URLs)
   generatedImages?: string[]; // Generated images (URLs)
+  video?: VideoData; // Generated video data
   model?: string;
+  category?: string; // Store category for filtering regenerate models
   elapsedTime?: number;
   reasoning?: string;
+  originalPrompt?: string; // Store original prompt for regeneration
+  originalImages?: string[]; // Store original images for regeneration
 }
 
 const Demo = () => {
@@ -89,6 +122,127 @@ const Demo = () => {
     setImagePreviews(newPreviews);
   };
 
+  const regenerateWithModel = async (assistantMessageIndex: number, category: string, model: string) => {
+    console.log('regenerateWithModel called:', { assistantMessageIndex, category, model });
+    const assistantMessage = messages[assistantMessageIndex];
+    if (!assistantMessage || assistantMessage.role !== 'assistant' || !assistantMessage.originalPrompt) {
+      console.error('Cannot regenerate:', { assistantMessage, hasPrompt: !!assistantMessage?.originalPrompt });
+      toast.error('Cannot regenerate: original prompt not found');
+      return;
+    }
+
+    console.log('Starting regeneration with:', { prompt: assistantMessage.originalPrompt, category, model });
+    setLoading(true);
+    const originalPrompt = assistantMessage.originalPrompt;
+    const originalImages = assistantMessage.originalImages || [];
+
+    try {
+      const request: any = {
+        prompt: originalPrompt,
+        images: originalImages.length > 0 ? originalImages : undefined,
+        category,
+        model,
+      };
+
+      const response = await processWithGemini(request);
+
+      let cleanText = response.text || '';
+      
+      // Additional client-side parsing
+      if (cleanText.includes('"data":') && cleanText.includes('"output":')) {
+        try {
+          const parsed = JSON.parse(cleanText);
+          if (parsed?.data?.output) {
+            cleanText = parsed.data.output;
+          }
+        } catch {
+          // ;-;
+        }
+      }
+
+      // Extract generated images from response data
+      let generatedImages: string[] = [];
+      if (response.data) {
+        try {
+          if (response.data.images && Array.isArray(response.data.images)) {
+            generatedImages = response.data.images
+              .map((img: any) => img.url || img)
+              .filter((url: string) => url && typeof url === 'string');
+          } else if (Array.isArray(response.data) && response.data.length > 0 && response.data[0]?.url) {
+            generatedImages = response.data
+              .map((img: any) => img.url || img)
+              .filter((url: string) => url && typeof url === 'string');
+          } else if (response.data.url && typeof response.data.url === 'string') {
+            generatedImages = [response.data.url];
+          }
+        } catch (e) {
+          console.warn('Failed to extract images from response:', e);
+        }
+      }
+
+      // Extract video data from response
+      let videoData: VideoData | undefined = undefined;
+      if (response.data) {
+        try {
+          if (response.data.video && response.data.video.url) {
+            videoData = {
+              video: response.data.video,
+              video_id: response.data.video_id,
+              thumbnail: response.data.thumbnail,
+              spritesheet: response.data.spritesheet
+            };
+          }
+        } catch (e) {
+          console.warn('Failed to extract video from response:', e);
+        }
+      }
+
+      // If backend returned structured data, show a readable summary
+      if (!cleanText && response.data && generatedImages.length === 0 && !videoData) {
+        try {
+          cleanText = JSON.stringify(response.data, null, 2);
+        } catch {
+          cleanText = String(response.data);
+        }
+      }
+
+      if (generatedImages.length > 0 && !cleanText) {
+        cleanText = `Generated ${generatedImages.length} image${generatedImages.length > 1 ? 's' : ''}`;
+      }
+
+      if (videoData && !cleanText) {
+        cleanText = 'Generated video';
+      }
+
+      const newAssistantMessage: Message = {
+        role: 'assistant',
+        content: cleanText || '(no output)',
+        generatedImages: generatedImages.length > 0 ? generatedImages : undefined,
+        video: videoData,
+        model: response.selectedModel || response.model || model,
+        category: response.category || category,
+        elapsedTime: response.elapsedTime,
+        reasoning: response.reasoning || undefined,
+        originalPrompt,
+        originalImages: originalImages.length > 0 ? originalImages : undefined
+      };
+
+      // Replace the assistant message at the same index
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[assistantMessageIndex] = newAssistantMessage;
+        return newMessages;
+      });
+    } catch (err: any) {
+      console.error('Regenerate error:', err);
+      toast.error('Regeneration failed', {
+        description: err.message || 'Failed to regenerate with selected model',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -100,16 +254,6 @@ const Demo = () => {
     const currentPrompt = prompt;
     const currentPreviews = [...imagePreviews];
     
-    const userMessage: Message = {
-      role: 'user',
-      content: currentPrompt,
-      images: currentPreviews.length > 0 ? currentPreviews : undefined
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setPrompt('');
-    setImages([]);
-    setImagePreviews([]);
     setLoading(true);
 
     try {
@@ -123,6 +267,19 @@ const Demo = () => {
         });
         imageDataUrls.push(base64);
       }
+
+      const userMessage: Message = {
+        role: 'user',
+        content: currentPrompt,
+        images: currentPreviews.length > 0 ? currentPreviews : undefined,
+        originalPrompt: currentPrompt,
+        originalImages: imageDataUrls.length > 0 ? imageDataUrls : undefined
+      };
+      
+      setMessages(prev => [...prev, userMessage]);
+      setPrompt('');
+      setImages([]);
+      setImagePreviews([]);
 
       const request: any = {
         prompt: currentPrompt,
@@ -182,8 +339,27 @@ const Demo = () => {
         }
       }
 
+      // Extract video data from response
+      let videoData: VideoData | undefined = undefined;
+      if (response.data) {
+        try {
+          // Check if data has video structure (fal.ai video generation format)
+          // The structure can be: { video: { url: ... }, thumbnail: {...}, ... }
+          if (response.data.video && response.data.video.url) {
+            videoData = {
+              video: response.data.video,
+              video_id: response.data.video_id,
+              thumbnail: response.data.thumbnail,
+              spritesheet: response.data.spritesheet
+            };
+          }
+        } catch (e) {
+          console.warn('Failed to extract video from response:', e);
+        }
+      }
+
       // If backend returned structured data (e.g. fal-ai images/videos/tts), show a readable summary
-      if (!cleanText && response.data && generatedImages.length === 0) {
+      if (!cleanText && response.data && generatedImages.length === 0 && !videoData) {
         try {
           cleanText = JSON.stringify(response.data, null, 2);
         } catch {
@@ -196,13 +372,22 @@ const Demo = () => {
         cleanText = `Generated ${generatedImages.length} image${generatedImages.length > 1 ? 's' : ''}`;
       }
 
+      // If we have generated video, show a simple message
+      if (videoData && !cleanText) {
+        cleanText = 'Generated video';
+      }
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: cleanText || '(no output)',
         generatedImages: generatedImages.length > 0 ? generatedImages : undefined,
+        video: videoData,
         model: response.selectedModel || response.model || selectedModel,
+        category: response.category || selectedCategory || undefined,
         elapsedTime: response.elapsedTime,
-        reasoning: response.reasoning || undefined
+        reasoning: response.reasoning || undefined,
+        originalPrompt: currentPrompt,
+        originalImages: imageDataUrls.length > 0 ? imageDataUrls : undefined
       };
 
       // Debug: Log reasoning
@@ -288,7 +473,14 @@ const Demo = () => {
             )}
 
             {messages.map((msg, idx) => (
-              <ChatMessage key={idx} message={msg} />
+              <ChatMessage 
+                key={idx} 
+                message={msg} 
+                onRegenerate={msg.role === 'assistant' && msg.originalPrompt ? (category: string, model: string) => {
+                  regenerateWithModel(idx, category, model);
+                } : undefined}
+                tools={tools}
+              />
             ))}
 
             {loading && (

@@ -267,15 +267,19 @@ router.post('/process', async (req: Request, res: Response) => {
 
       const elapsedTime = (Date.now() - startTime) / 1000;
 
-      // Check if this is an image generation result
+      // Check if this is an image or video generation result
       const data: any = generation.data;
       const isImageGeneration = data?.images && Array.isArray(data.images) && data.images.length > 0;
+      const isVideoGeneration = data?.video && data.video.url;
 
       // Normalize output into a string for chat rendering
       let text: string;
       if (isImageGeneration) {
         // For image generation, don't show JSON, just a simple message
         text = `Generated ${data.images.length} image${data.images.length > 1 ? 's' : ''}`;
+      } else if (isVideoGeneration) {
+        // For video generation, don't show JSON, just a simple message
+        text = 'Generated video';
       } else if (typeof data === 'string') {
         text = data;
       } else if (data?.output && typeof data.output === 'string') {
@@ -337,11 +341,15 @@ router.post('/process', async (req: Request, res: Response) => {
     // Normalize output into a string for chat rendering
     const data: any = generation.data;
     const isImageGeneration = data?.images && Array.isArray(data.images) && data.images.length > 0;
+    const isVideoGeneration = data?.video && data.video.url;
     
     let text: string;
     if (isImageGeneration) {
       // For image generation, don't show JSON, just a simple message
       text = `Generated ${data.images.length} image${data.images.length > 1 ? 's' : ''}`;
+    } else if (isVideoGeneration) {
+      // For video generation, don't show JSON, just a simple message
+      text = 'Generated video';
     } else if (typeof data === 'string') {
       text = data;
     } else if (data?.output && typeof data.output === 'string') {
